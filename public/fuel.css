@@ -1330,3 +1330,4 @@ body.mag[data-theme="bubblegum"] { --p-bg: #FBE4EE; }
 @media (prefers-reduced-motion: reduce) { .fact-pop { animation: none; } }
 .pb-done-side { display: flex; flex-direction: column; gap: 8px; align-items: flex-start; }
 .pb-done-side .sticker-badge { margin-bottom: 8px; }
+.mag .logo.logo-g { width: 48px; height: 48px; border-radius: 12px; }
