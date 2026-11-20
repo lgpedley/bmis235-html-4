@@ -560,8 +560,8 @@
 
   const THEME_LABELS = {"sage": "Sage Cottage", "strawberry": "Strawberry Milk", "butterblue": "Butter & Blue", "mocha": "Mocha Latte"};
   function applyTheme() {
-    let t = (state.settings && state.settings.theme) || 'noir';
-    if (!['noir', 'moss', 'paper'].includes(t)) t = 'noir';
+    let t = (state.settings && state.settings.theme) || 'bubblegum';
+    if (!['bubblegum', 'draper'].includes(t)) t = 'bubblegum';
     document.body.dataset.theme = t;
     document.querySelectorAll('[data-theme-pick]').forEach(b => b.classList.toggle('on', b.dataset.themePick === t));
     const cs = getComputedStyle(document.body), v = (n) => cs.getPropertyValue(n).trim();
@@ -1533,6 +1533,35 @@
     const tp = ev.target.closest('[data-theme-pick]'); if (!tp) return;
     state.settings.theme = tp.dataset.themePick; save(); render();
   });
+
+
+  /* ---- magazine heroes: big title, micro labels, sticker, ticker ---- */
+  const HEROES = {
+    today:  ['Today', 'a little fuel, a lot of kindness', 'plate'],
+    week:   ['My Week', 'your rhythm, not your grade', 'calendar'],
+    plan:   ['The Plan', 'decide once, eat easy', 'pan'],
+    recipe: ['Recipe', "this week's pick, just for you", 'sparkle'],
+    ideas:  ['Ideas', 'new things to fall for', 'search'],
+    learn:  ['Food Groups', 'what each one does for you', 'broccoli'],
+    foods:  ['My Foods', 'the things you love', 'heart'],
+    howto:  ['Make It', 'step by step, no stress', 'pan']
+  };
+  function buildHeroes() {
+    const issue = new Date().toLocaleDateString([], { month: 'long', day: 'numeric', year: 'numeric' });
+    Object.keys(HEROES).forEach((k, i) => {
+      const sec = document.getElementById('tab-' + k); if (!sec || sec.querySelector('.mag-hero')) return;
+      const [title, sub, icon] = HEROES[k];
+      const word = esc(title) + ' <span aria-hidden="true">✦</span> ';
+      const wrap = document.createElement('div');
+      wrap.innerHTML = '<header class="mag-hero' + (k === 'recipe' || k === 'ideas' ? ' grain' : '') + '">'
+        + '<div class="micro"><span>Gentle Plate · No. ' + String(i + 1).padStart(2, '0') + ' · ' + esc(issue) + '</span><span>Eat well, feel good, no grades, ever.</span></div>'
+        + '<h2 class="big' + (k === 'today' || k === 'ideas' || k === 'foods' ? ' bubble' : '') + '">' + esc(title) + '</h2><p class="sub">' + esc(sub) + '</p>'
+        + '<span class="star2" aria-hidden="true"></span><div class="sticker" aria-hidden="true"><svg><use href="#i-' + icon + '"/></svg></div></header>'
+        + '<div class="marquee" aria-hidden="true"><div>' + word.repeat(24) + '</div></div>';
+      sec.prepend(...wrap.childNodes);
+    });
+  }
+  buildHeroes();
 
   render();
   routeHash();
