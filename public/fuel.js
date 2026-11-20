@@ -988,18 +988,26 @@
       .map(x => x.dd);
   }
   // one new automatic idea for a single plan box, different from what's already in the week
-  function rerollSlot(day, slot) {
-    const p = dayPlan(day);
-    const used = new Set(); planDays(planWeek).forEach(d => { const q = peekPlan(isoDate(d)); if (q) SLOTS.forEach(([k]) => q[k].forEach(it => used.add(it.name))); });
-    const current = new Set(p[slot].map(it => it.name));
+  // "New idea" for one plan box: cycles through every option for that meal, repeats allowed.
+  // Options = recipes for that meal + favorites saved for that meal + whatever's planned for that meal on other days.
+  function rerollOptions(slot) {
     const meal = { breakfast: 'Breakfast', lunch: 'Lunch', snack: 'Snack' }[slot];
-    let pool = meal ? rankedDishes(meal).map(dd => ({ dd, item: dishItem(dd) })) : eligibleRecipes().map(r => ({ item: Object.assign(recipeItem(r), { auto: true }) }));
-    if (slot === 'lunch') { const dn = eligibleRecipes().map(r => r.name.toLowerCase()); pool = pool.filter(x => !dn.includes(x.item.name.toLowerCase())); }
-    let fresh = pool.filter(x => !used.has(x.item.name));
-    if (!fresh.length) fresh = pool.filter(x => !current.has(x.item.name));
-    if (!fresh.length) return false;
-    state.rerollN = (state.rerollN || 0) + 1;
-    p[slot] = [fresh[state.rerollN % fresh.length].item];
+    const opts = [];
+    const add = (items) => { const key = items.map(i => i.name).join(' + '); if (items.length && !opts.some(o => o.key === key)) opts.push({ key, items }); };
+    (meal ? rankedDishes(meal).map(dd => [dishItem(dd)]) : eligibleRecipes().map(r => [Object.assign(recipeItem(r), { auto: true })])).forEach(add);
+    (state.favorites || []).filter(f => (f.meal || (f.type === 'snack' ? 'snack' : null)) === slot)
+      .forEach(f => add(f.foods.map(x => ({ kind: 'food', name: x.name, groups: x.groups.slice(), cal: x.cal || 0, auto: true }))));
+    Object.keys(state.plan || {}).sort().forEach(d => { const q = state.plan[d]; if (q && q[slot] && q[slot].length) add(q[slot].map(it => Object.assign({}, it, { auto: true }))); });
+    return opts;
+  }
+  function rerollSlot(day, slot) {
+    const p = dayPlan(day), opts = rerollOptions(slot);
+    if (opts.length < 2 && opts.some(o => o.key === p[slot].map(i => i.name).join(' + '))) return false;
+    if (!opts.length) return false;
+    const cur = p[slot].map(i => i.name).join(' + ');
+    const at = opts.findIndex(o => o.key === cur);
+    const next = opts[(at + 1) % opts.length];
+    p[slot] = next.items.map(it => Object.assign({}, it, { groups: it.groups.slice() }));
     save(); return true;
   }
   function autofill(days) {
