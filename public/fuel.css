@@ -1383,3 +1383,6 @@ body.mag[data-theme="bubblegum"] { --p-bg: #FBE4EE; }
 .slot.eaten .pitem .howto-link { text-decoration: line-through; text-decoration-thickness: 2px; opacity: .65; }
 .slot.eaten { background: #F2F0DA !important; }
 .mag .slot .done { color: #24301A; background: #C8C46C; border-radius: 999px; padding: 0 8px; font: 500 .62rem "DM Mono", monospace; letter-spacing: .08em; text-transform: uppercase; }
+.groc-for { display: block; font-size: .72rem; opacity: .7; margin-top: 1px; }
+.grocery li label span { font-weight: 500; }
+.grocery label { flex-wrap: wrap; align-items: center; } .groc-for { flex-basis: 100%; padding-left: 26px; } .grocery li { padding: 6px 0; }

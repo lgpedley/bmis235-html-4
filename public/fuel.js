@@ -1067,17 +1067,38 @@
         : '<p class="tip">🌈 That\'s a really well-rounded week.</p>' + factHTML(bfast < 5 ? 'breakfast' : 'timing'));
   }
 
+  // turn a recipe line like "1 tbsp butter + 1 clove garlic (minced)" into clean items: ["Butter", "Garlic"]
+  const GROC_UNITS = /^(about\s+)?([\d½¼¾⅓⅔\/.\-–]+\s*)*((oz|ounces?|cups?|tbsp|tsp|lbs?|g|slices?|cloves?|ears?|box|boxes|fillets?|handfuls?|pieces?|cans?)\b\s*)?(of\s+)?/i;
+  const GROC_PREP = /\b(small|large|medium|big|fresh|thinly|cooked|cubed|flaked|minced|chopped|sliced|florets|bite-size|leftovers are perfect|to taste|optional:?|any shape|extra)\b/ig;
+  function grocParts(line) {
+    return String(line).replace(/\([^)]*\)/g, ' ').replace(/^optional:?\s*/i, '')
+      .split(/,|\+|\band\b|&/i)
+      .map(s => s.split(/\s+or\s+/i)[0])                      // "fries or potatoes" -> just the first choice
+      .map(s => s.trim().replace(/^(a|an)\s+/i, '').replace(/on the side/ig, '').replace(GROC_UNITS, '').replace(GROC_PREP, ' ').replace(/\s+/g, ' ').trim())
+      .filter(s => s.length > 1 && !/^(or|a|an|the|cut\b.*|into\b.*|for\b.*)$/i.test(s))
+      .map(s => s.charAt(0).toUpperCase() + s.slice(1));
+  }
+  function grocKey(name) {
+    let k = name.toLowerCase().replace(/[^a-z ]/g, ' ')
+      .replace(/\b(fillets?|mashed|frozen|whole|canned)\b/g, ' ').replace(/\bsweet corn\b/g, 'corn').replace(/\bblack pepper\b/g, 'pepper').replace(/\s+/g, ' ').trim();
+    k = k.replace(/(\w+)oes\b/g, '$1o').replace(/(\w{3,})s\b/g, '$1');   // potatoes -> potato, noodles -> noodle
+    return k;
+  }
+  // one combined list: every ingredient appears once, with the meals it's for
   function groceryList(days) {
-    const foods = new Map(), recipes = new Map(), dishes = new Map();
+    const items = new Map();
+    const add = (name, forMeal) => { const k = grocKey(name); if (!k) return;
+      if (!items.has(k)) items.set(k, { key: k, name, for: new Set() });
+      if (forMeal) items.get(k).for.add(forMeal); };
     days.forEach(d => {
       const p = peekPlan(isoDate(d)); if (!p) return;
       SLOTS.forEach(([k]) => p[k].forEach(it => {
-        if (it.kind === 'recipe') { const r = RECIPES.find(x => x.name === it.name); if (r) recipes.set(r.name, r.ingredients); }
-        else if (it.kind === 'dish') { const dd = PANTRY_DISHES.find(x => x.name === it.name); if (dd) dishes.set(dd.name, dd.need.map(req => cap1(req[0]))); }
-        else if (!foods.has(it.name.toLowerCase())) foods.set(it.name.toLowerCase(), it.name);
+        if (it.kind === 'recipe') { const r = RECIPES.find(x => x.name === it.name); if (r) r.ingredients.forEach(l => grocParts(l).forEach(n => add(n, r.name))); }
+        else if (it.kind === 'dish') { const dd = PANTRY_DISHES.find(x => x.name === it.name); if (dd) dd.need.forEach(req => add(cap1(req[0]), dd.name)); }
+        else add(it.name, null);
       }));
     });
-    return { foods: [...foods.values()], recipes: [...recipes.entries()], dishes: [...dishes.entries()] };
+    return [...items.values()];
   }
 
   function renderPlan() {
@@ -1105,19 +1126,21 @@
 
     const groc = groceryList(days), wk = isoDate(days[0]);
     state.grocery = state.grocery || {}; const checked = state.grocery[wk] || {};
-    const box = (n, strict) => { const h = haveIngredient(n, strict === true);
-      return '<li' + (h ? ' class="have"' : '') + '><label><input type="checkbox" data-groc="' + wk + '|' + esc(n) + '"' + (checked[n] || h ? ' checked' : '') + '> <span>' + esc(n) + '</span>'
-        + (h ? ' <em class="have-tag">already have</em>' : '') + '</label></li>'; };
-    let html = '';
     state.groceryExtra = state.groceryExtra || {};
     const mine = state.groceryExtra[wk] || [];
-    if (mine.length) html += '<h3 class="sub">Added by me</h3><ul class="grocery">' + mine.map((n, i) =>
-      box(n).replace('</label></li>', '</label><button class="x" data-groc-del="' + wk + '|' + i + '" aria-label="Remove ' + esc(n) + '">×</button></li>')).join('') + '</ul>';
-    if (groc.foods.length) html += '<h3 class="sub">Everyday foods</h3><ul class="grocery">' + groc.foods.map(n => box(n, true)).join('') + '</ul>';
-    if (groc.dishes && groc.dishes.length) html += '<div class="groc-recipes">' + groc.dishes.map(([name, ings]) =>
-      '<div class="groc-recipe"><h3 class="sub">🍳 ' + esc(name) + '</h3><ul class="grocery one">' + ings.map(box).join('') + '</ul></div>').join('') + '</div>';
-    if (groc.recipes.length) html += '<div class="groc-recipes">' + groc.recipes.map(([name, ings]) =>
-      '<div class="groc-recipe"><h3 class="sub">✨ ' + esc(name) + '</h3><ul class="grocery one">' + ings.map(box).join('') + '</ul></div>').join('') + '</div>';
+    const mineKeys = new Set(mine.map(grocKey));
+    const isChecked = (name) => !!(checked[name] || checked[grocKey(name)]);
+    const box = (name, extraHtml, forSet) => { const h = haveIngredient(name, true);
+      return '<li' + (h ? ' class="have"' : '') + '><label><input type="checkbox" data-groc="' + wk + '|' + esc(grocKey(name)) + '"' + (isChecked(name) || h ? ' checked' : '') + '> <span>' + esc(name) + '</span>'
+        + (h ? ' <em class="have-tag">already have</em>' : '')
+        + (forSet && forSet.size ? '<small class="groc-for">for ' + esc([...forSet].join(', ')) + '</small>' : '') + '</label>' + (extraHtml || '') + '</li>'; };
+    let html = '';
+    if (mine.length) html += '<h3 class="sub">Added by me</h3><ul class="grocery">' + mine.map((n, i) => {
+      const fromPlan = groc.find(x => x.key === grocKey(n));
+      return box(n, '<button class="x" data-groc-del="' + wk + '|' + i + '" aria-label="Remove ' + esc(n) + '">×</button>', fromPlan && fromPlan.for);
+    }).join('') + '</ul>';
+    const planItems = groc.filter(x => !mineKeys.has(x.key)).sort((a, b) => a.name.localeCompare(b.name));
+    if (planItems.length) html += '<h3 class="sub">From your plan <span class="muted">(' + planItems.length + ' items, each listed once)</span></h3><ul class="grocery">' + planItems.map(x => box(x.name, '', x.for)).join('') + '</ul>';
     $('#grocery').innerHTML = html || '<p class="muted">Add meals to your plan and your shopping list builds itself here.</p>';
   }
 
@@ -1197,7 +1220,8 @@
     const wk = isoDate(planDays(planWeek)[0]);
     state.groceryExtra = state.groceryExtra || {};
     const list = state.groceryExtra[wk] = state.groceryExtra[wk] || [];
-    if (!list.some(n => n.toLowerCase() === name.toLowerCase())) list.push(name);
+    name.split(',').map(s => s.trim()).filter(Boolean).map(s => s.charAt(0).toUpperCase() + s.slice(1))
+      .forEach(n => { if (!list.some(x => grocKey(x) === grocKey(n))) list.push(n); });
     input.value = ''; save(); renderPlan(); sketchify($('#tab-plan')); input.focus();
   });
   document.addEventListener('click', (ev) => {
