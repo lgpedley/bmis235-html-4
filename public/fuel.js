@@ -1,5 +1,5 @@
 /* =====================================================================
-   Fuel Up · app logic
+   Gentle Plate · app logic
    Everything is stored in localStorage on this device only.
    ===================================================================== */
 (function () {

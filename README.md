@@ -1,4 +1,4 @@
-# Fuel Up
+# Gentle Plate
 
 A judgment-free food tracker. Log meals and snacks, get encouragement backed by nutrition research, see your eating rhythm and food groups each week, and get a weekly recipe built from foods you like.
 

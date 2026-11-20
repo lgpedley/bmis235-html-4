@@ -1,5 +1,5 @@
 /* =====================================================================
-   Fuel Up · styles
+   Gentle Plate · styles
    Palette: Buttercup #F2EEE6 · Warm Pink #937C91 · Cherry #491812 · Garnet #202011 · Icy Blue #D7CFBE · Olive #8494A1
    ===================================================================== */
 :root {
@@ -488,3 +488,4 @@ dialog.picker::backdrop { background: rgba(32,32,17,.35); }
 .pitem.recipe { color: #F2EEE6; }
 .pitem.recipe .x { color: #F2EEE6; }
 footer { color: #3E3530; }
+.logo { width: 58px; height: 58px; color: #F2EEE6; }
