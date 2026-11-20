@@ -78,7 +78,7 @@
     dairy:   { label: 'Dairy', emoji: '🧀', goal: 14, fact: 'dairy',
                why: 'Calcium and vitamin D for strong bones, plus some protein.',
                ideas: ['Cheese in grilled cheese or mac', 'Alfredo or rosatella sauce', 'A glass of milk with dinner'] },
-    fun:     { label: 'Fun foods', emoji: '🌶️', goal: 0, fact: null,
+    fun:     { label: 'Fun foods', emoji: '🌶', goal: 0, fact: null,
                why: 'Food is also joy! Fun foods have a place, and pairing them with a meal can keep cravings calmer.',
                ideas: ['Hot Cheetos as a crunchy side with a grilled cheese', 'Pour a bowl to enjoy instead of eating from the bag'] }
   };
@@ -197,6 +197,29 @@
       ingredients: ['2 oz noodles', '1 salmon fillet', '1 tbsp butter + garlic', 'Parmesan, salt, pepper'],
       steps: ['Bake or pan-sear salmon 10–12 minutes.', 'Boil noodles, drain, toss with butter, garlic and parmesan.', 'Flake the salmon on top.'] }
   ];
+
+  /* ---------------------------------------------------------------
+     Sketch icons: every emoji on the page is swapped for a hand-drawn
+     icon from the sprite in index.html
+     --------------------------------------------------------------- */
+  const ICONS = { '🍽': 'plate', '🍞': 'bread', '🐟': 'fish', '🥦': 'broccoli', '🍓': 'strawberry', '🧀': 'cheese', '🌶': 'chili',
+    '💛': 'heart', '📊': 'chart', '💡': 'bulb', '🌈': 'rainbow', '💪': 'dumbbell', '🥔': 'potato', '🌽': 'corn', '🔥': 'fire',
+    '🔋': 'battery', '✨': 'sparkle', '🎉': 'sparkle', '☀': 'sun', '🌱': 'sprout', '⏱': 'timer', '📅': 'calendar' };
+  const ICON_RE = new RegExp('(' + Object.keys(ICONS).join('|') + ')\uFE0F?', 'gu');
+  const ICON_TEST = new RegExp('(' + Object.keys(ICONS).join('|') + ')', 'u');  // no "g" flag, so repeated .test() calls are reliable
+  const GROUP_ICON = { carbs: 'bread', protein: 'fish', veg: 'broccoli', fruit: 'strawberry', dairy: 'cheese', fun: 'chili' };
+  function ico(name, cls) { return '<svg class="ico' + (cls ? ' ' + cls : '') + '" aria-hidden="true"><use href="#i-' + name + '"/></svg>'; }
+  function sketchify(root) {
+    const walker = document.createTreeWalker(root, NodeFilter.SHOW_TEXT, {
+      acceptNode: (n) => (n.parentNode.closest('svg, script, option, textarea') || !ICON_TEST.test(n.nodeValue)) ? NodeFilter.FILTER_REJECT : NodeFilter.FILTER_ACCEPT
+    });
+    const nodes = []; while (walker.nextNode()) nodes.push(walker.currentNode);
+    nodes.forEach(n => {
+      const span = document.createElement('span');
+      span.innerHTML = esc(n.nodeValue).replace(ICON_RE, (m, e) => ico(ICONS[e]));
+      n.replaceWith(...span.childNodes);
+    });
+  }
 
   /* ---------------------------------------------------------------
      Storage
@@ -405,7 +428,8 @@
     let s = '<svg class="chart" viewBox="0 0 ' + W + ' ' + H + '" role="img" aria-label="Food groups this week">';
     keys.forEach((k, i) => {
       const g = GROUPS[k], y = top + rowH * i + (rowH - barH) / 2, v = counts[k];
-      s += '<text class="lab" x="0" y="' + (y + barH - 4) + '">' + g.emoji + ' ' + esc(g.label) + '</text>';
+      s += '<use href="#i-' + GROUP_ICON[k] + '" x="0" y="' + (y - 3) + '" width="24" height="24" style="color:#50050E"/>';
+      s += '<text class="lab" x="30" y="' + (y + barH - 4) + '">' + esc(g.label) + '</text>';
       s += '<rect x="' + left + '" y="' + y + '" width="' + (W - left - right) + '" height="' + barH + '" fill="' + C.band + '" rx="4"/>';
       if (v > 0) s += '<rect x="' + left + '" y="' + y + '" width="' + Math.max(4, x(v) - left) + '" height="' + barH + '" fill="' + C.bar + '" rx="4"/>';
       if (g.goal) s += '<line x1="' + x(g.goal) + '" x2="' + x(g.goal) + '" y1="' + (y - 4) + '" y2="' + (y + barH + 4) + '" stroke="' + C.goal + '" stroke-width="2"/>';
@@ -436,7 +460,7 @@
       const v = levels[g] || 0, G = GROUPS[g], on = v > 0;
       const tip = G.label + (labels && labels[g] ? ': ' + labels[g] : on ? ': yes!' : ': not yet');
       return '<g class="hit" data-tip="' + esc(tip) + '">' + shape(fill(v), on)
-        + '<text x="' + x + '" y="' + (y + 2) + '" class="pemo" text-anchor="middle" opacity="' + (on ? 1 : .4) + '">' + G.emoji + '</text>'
+        + '<use href="#i-' + GROUP_ICON[g] + '" x="' + (x - 14) + '" y="' + (y - 22) + '" width="28" height="28" opacity="' + (on ? 1 : .45) + '" style="color:#50050E"/>'
         + '<text class="plab" x="' + x + '" y="' + (y + 22) + '" text-anchor="middle">' + esc(labels && labels[g] ? labels[g] : G.label.split(' ')[0]) + '</text></g>';
     };
     parts.forEach(([g, a0, a1]) => {
@@ -470,10 +494,11 @@
     document.body.classList.toggle('no-cal', !state.settings.calories);
     $('#cal-toggle').checked = state.settings.calories;
     renderToday(); renderWeek(); renderRecipe(); renderLearn(); renderFoods();
+    sketchify(document.body);
   }
 
   function groupOptions() {
-    return GROUP_KEYS.map(k => '<option value="' + k + '">' + GROUPS[k].emoji + ' ' + GROUPS[k].label + '</option>').join('');
+    return GROUP_KEYS.map(k => '<option value="' + k + '">' + GROUPS[k].label + '</option>').join('');
   }
 
   function renderPicker() {
@@ -646,7 +671,7 @@
     selected = new Set(); extras = []; calTouched = false;
     $('#log-note').value = ''; $('#log-time').value = localInputValue(new Date());
     render();
-    const ch = $('#cheer'); ch.innerHTML = cheerFor(entry); ch.hidden = false;
+    const ch = $('#cheer'); ch.innerHTML = cheerFor(entry); ch.hidden = false; sketchify(ch);
     ch.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
   });
 
@@ -655,7 +680,7 @@
     if (del) { state.entries = state.entries.filter(e => e.id !== del.dataset.del); save(); render(); return; }
     const rm = ev.target.closest('[data-remove-food]');
     if (rm) { state.foods = state.foods.filter(f => f.id !== rm.dataset.removeFood); selected.delete(rm.dataset.removeFood); save(); render(); return; }
-    if (ev.target.id === 'next-recipe') { state.recipeOffset = (state.recipeOffset || 0) + 1; save(); renderRecipe(); }
+    if (ev.target.id === 'next-recipe') { state.recipeOffset = (state.recipeOffset || 0) + 1; save(); renderRecipe(); sketchify($('#recipe')); }
   });
 
   $('#food-form').addEventListener('submit', (ev) => {

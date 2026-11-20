@@ -266,3 +266,18 @@ footer { max-width: 1100px; margin: 0 auto; padding: 10px 16px 40px; font-size: 
 .card.brown .del:hover { color: var(--on-brown); }
 .card.brown .tag.meal { background: var(--buttercup); color: var(--garnet); }
 .card.brown .tip { color: var(--on-brown); }
+
+/* ---------- sketch icons ---------- */
+.ico { width: 1.25em; height: 1.25em; vertical-align: -0.28em; display: inline-block; overflow: visible; }
+h2 .ico { width: 1.35em; height: 1.35em; }
+.logo { width: 52px; height: 52px; color: var(--buttercup); flex: 0 0 auto; }
+.brand { position: relative; }
+.doodles { margin-left: auto; display: flex; gap: 10px; color: var(--buttercup); }
+.doodles svg { width: 38px; height: 38px; }
+.doodles svg:nth-child(odd) { transform: rotate(-8deg); }
+.doodles svg:nth-child(even) { transform: rotate(7deg) translateY(4px); }
+@media (max-width: 700px) { .doodles { display: none; } }
+.group-card .emoji .ico { width: 56px; height: 56px; }
+.addlist .ic .ico { width: 34px; height: 34px; }
+.amount .icons .ico { width: 26px; height: 26px; margin-right: 2px; }
+.fact > .ico:first-child { margin-right: 4px; }
