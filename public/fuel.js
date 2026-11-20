@@ -856,57 +856,40 @@
 
   // Auto-fill: replaces only slots that are empty or were auto-filled before; never touches what you added yourself
   function autofill(days) {
-    const solo = (f) => !/sauce/i.test(f.name);   // sauces go on things; never planned on their own
-    const foods = state.foods.filter(solo);
-    const pick = (words) => foods.filter(f => fits(f, words));
-    const bBase = pick(FIT.breakfastBase);
-    const bSide = pick(FIT.breakfast).filter(f => !fits(f, FIT.breakfastBase));
-    const hiddenIdeas = state.hiddenIdeas || [];
-    const bTry = BREAKFAST_TRY.filter(([n]) => !hiddenIdeas.some(h => h.toLowerCase().startsWith(n.toLowerCase().slice(0, 5))))
-      .map(([n, g]) => ({ kind: 'try', name: n, groups: [g], cal: estimateCal(n, g).cal, auto: true }));
-    const lMain = pick(FIT.lunchMain).filter(f => !/steak/i.test(f.name));
-    const sides = pick(FIT.side);
-    const snacks = pick(FIT.snack);
-    const recipes = eligibleRecipes();
-    const prot = foods.filter(f => f.groups.includes('protein')), veg = foods.filter(f => f.groups.includes('veg') && !/pickle/i.test(f.name));
     state.fillSeed = (state.fillSeed || 0) + 1;
     const seed = state.fillSeed;
-    const at = (arr, i) => arr.length ? arr[((i + seed) % arr.length + arr.length) % arr.length] : null;
-    const auto = (f) => Object.assign(foodItem(f), { auto: true });
+    const likedHas = (req) => req.some(w => state.foods.some(f => f.name.toLowerCase().includes(w)));
+    const have = (req) => likedHas(req) || pantryHas(req);
+    // rank recipes for a meal: ones you can fully make first, then ones missing just one thing
+    const ranked = (meal) => PANTRY_DISHES.filter(dd => dd.meal === meal)
+      .map(dd => ({ dd, miss: dd.need.filter(req => !have(req)).length }))
+      .filter(x => x.miss <= 1)
+      .sort((a, b) => a.miss - b.miss || b.dd.need.length - a.dd.need.length)
+      .map(x => x.dd);
+    const pickList = (list, n) => {   // n different picks, rotated by the shuffle seed
+      if (!list.length) return [];
+      const off = (seed * 3) % list.length;
+      return Array.from({ length: n }, (_, i) => list[(off + i) % list.length]);
+    };
+    const B = pickList(ranked('Breakfast'), days.length);
+    const L = pickList(ranked('Lunch'), days.length);
+    const S = pickList(ranked('Snack'), days.length);
+    const D = pickList(eligibleRecipes(), days.length);
+    // don't serve the same main thing at lunch and dinner on one day (e.g. noodles twice)
+    const words = (s) => s.toLowerCase().split(/[^a-z]+/).filter(w => w.length > 4 && !['with', 'cheese', 'cheesy', 'roasted', 'garlic', 'butter'].includes(w));
+    const clash = (a, b) => a && b && words(a.name).some(w => words(b.name).includes(w));
+    for (let i = 0; i < L.length; i++) {
+      if (!clash(L[i], D[i])) continue;
+      for (let k = 1; k < L.length; k++) { const o = (i + k) % L.length;
+        if (!clash(L[o], D[i]) && !clash(L[i], D[o])) { [L[i], L[o]] = [L[o], L[i]]; break; } }
+    }
     const replaceable = (items) => !items.length || items.every(it => it.auto);
-    // dishes you can make right now with your pantry + cooking extras, by meal
-    const ready = (meal) => (state.pantry || []).length ? PANTRY_DISHES.filter(dd => dd.meal === meal && dd.need.every(req => pantryHas(req))) : [];
-    const rB = ready('Breakfast'), rL = ready('Lunch'), rD = ready('Dinner'), rS = ready('Snack');
     days.forEach((d, i) => {
       const p = dayPlan(isoDate(d));
-      if (replaceable(p.breakfast)) {
-        if (rB.length && i % 2 === 0) p.breakfast = [dishItem(at(rB, i / 2))];
-        else {
-          const base = at(bBase, i), side = at(bSide, i);
-          p.breakfast = [base, side].filter(Boolean).map(auto);
-          if (!side) { const t = at(bTry, i); if (t) p.breakfast.push(Object.assign({}, t)); }
-        }
-      }
-      if (replaceable(p.dinner)) {
-        const r = at(recipes, i + weekNumber());
-        if (rD.length && i % 2 === 1) p.dinner = [dishItem(at(rD, (i - 1) / 2))];
-        else p.dinner = r ? [Object.assign(recipeItem(r), { auto: true })] : [at(prot, i), at(veg, i)].filter(Boolean).map(auto);
-      }
-      if (replaceable(p.lunch) && rL.length && i % 2 === 1) { p.lunch = [dishItem(at(rL, (i - 1) / 2))]; }
-      else if (replaceable(p.lunch)) {
-        const dn = (p.dinner.map(it => it.name).join(' ')).toLowerCase();
-        const overlaps = (f) => f.name.toLowerCase().split(/[^a-z]+/).some(w => w.length > 3 && dn.includes(w));
-        const mains = lMain.filter(f => !overlaps(f));
-        const main = at(mains.length ? mains : lMain, i);
-        const pair = main && LUNCH_SIDES.find(([mains]) => fits(main, mains));
-        const okSides = sides.filter(f => (!main || f.name !== main.name) && (!pair || fits(f, pair[1])));
-        const side = at(okSides, i + 2);
-        p.lunch = [main, side].filter(Boolean).map(auto);
-      }
-      if (replaceable(p.snack)) {
-        if (rS.length && i % 3 === 0) p.snack = [dishItem(at(rS, i / 3))];
-        else { const f = at(snacks, i * 3); p.snack = f ? [auto(f)] : []; }
-      }
+      if (replaceable(p.breakfast) && B[i]) p.breakfast = [dishItem(B[i])];
+      if (replaceable(p.lunch) && L[i]) p.lunch = [dishItem(L[i])];
+      if (replaceable(p.dinner) && D[i]) p.dinner = [Object.assign(recipeItem(D[i]), { auto: true })];
+      if (replaceable(p.snack) && S[i]) p.snack = [dishItem(S[i])];
     });
     save();
   }
@@ -1284,7 +1267,20 @@
     { name: 'Buttered sweet corn', meal: 'Side', need: [['corn'], ['butter']], extra: [['parmesan']], groups: ['veg'], steps: 'Boil or microwave corn 4–5 min, then butter and salt.' },
     { name: 'Cheesy broccoli', meal: 'Side', need: [['broccoli'], ['cheese']], extra: [['butter'], ['garlic']], groups: ['veg', 'dairy'], steps: 'Steam broccoli 4 min and melt cheese over the top.' },
     { name: 'Garlic roasted broccoli', meal: 'Side', need: [['broccoli']], extra: [['garlic'], ['parmesan']], groups: ['veg'], steps: 'Toss with oil and salt, roast at 425°F for 15 min until crispy edges.' },
-    { name: 'Crackers, cheese & pickles', meal: 'Snack', need: [['cracker'], ['cheese']], extra: [['pickle'], ['apple', 'grape']], groups: ['carbs', 'dairy'], steps: 'Plate it up. Salty, crunchy and filling.' }
+    { name: 'Crackers, cheese & pickles', meal: 'Snack', need: [['cracker'], ['cheese']], extra: [['pickle'], ['apple', 'grape']], groups: ['carbs', 'dairy'], steps: 'Plate it up. Salty, crunchy and filling.' },
+    { name: 'Cinnamon sugar toast', meal: 'Breakfast', need: [['bread', 'toast'], ['butter']], extra: [['cinnamon'], ['banana']], groups: ['carbs'], steps: 'Toast the bread. Spread with butter, then sprinkle with cinnamon and a little sugar. Add banana slices on top for extra staying power.' },
+    { name: 'Breakfast quesadilla', meal: 'Breakfast', need: [['tortilla'], ['egg'], ['cheese']], extra: [['corn'], ['hot sauce']], groups: ['carbs', 'protein', 'dairy'], steps: 'Scramble 2 eggs. Spread them on half a tortilla, add cheese and fold. Crisp in a pan 2 minutes per side.' },
+    { name: 'Cheesy corn scramble', meal: 'Breakfast', need: [['egg'], ['corn'], ['cheese']], extra: [['butter'], ['toast', 'bread']], groups: ['protein', 'veg', 'dairy'], steps: 'Warm a handful of corn in butter for 2 minutes. Add 2 whisked eggs and stir slowly. Fold in cheese right at the end. Serve with toast.' },
+    { name: '2-ingredient banana pancakes', meal: 'Breakfast', need: [['banana'], ['egg']], extra: [['butter'], ['cinnamon'], ['peanut butter']], groups: ['fruit', 'protein'], steps: 'Mash 1 ripe banana and whisk in 2 eggs. Cook small spoonfuls in a buttered pan on medium-low, about 1 minute per side. Top with peanut butter if you like.' },
+    { name: 'Egg & cheese toast sandwich', meal: 'Breakfast', need: [['bread', 'toast'], ['egg'], ['cheese']], extra: [['butter']], groups: ['carbs', 'protein', 'dairy'], steps: 'Fry an egg (break the yolk if you like it firm). Toast 2 slices, add a slice of cheese and the egg. Grab-and-go breakfast.' },
+    { name: 'Dill pickle pasta salad', meal: 'Lunch', need: [['pasta', 'noodle'], ['pickle'], ['cheese']], extra: [['mayo'], ['ranch']], groups: ['carbs', 'veg', 'dairy'], steps: 'Cook pasta, rinse with cold water. Toss with chopped pickles, cubed cheese, a spoon of mayo or ranch and a splash of pickle juice. Chill or eat right away.' },
+    { name: 'Loaded cheesy fries', meal: 'Lunch', need: [['fries', 'potato'], ['cheese']], extra: [['beef', 'burger'], ['pickle'], ['ranch']], groups: ['carbs', 'dairy'], steps: 'Bake fries until crispy. Top with shredded cheese and bake 2 more minutes to melt. Add browned beef and chopped pickles to make it a full meal.' },
+    { name: 'Salmon melt', meal: 'Lunch', need: [['salmon'], ['bread', 'toast'], ['cheese']], extra: [['butter'], ['pickle']], groups: ['protein', 'carbs', 'dairy'], steps: 'Flake cooked salmon (leftovers are perfect) onto bread, top with cheese and another slice. Cook in a buttered pan like a grilled cheese, 3 minutes per side.' },
+    { name: 'Broccoli mac & cheese bowl', meal: 'Lunch', need: [['mac'], ['broccoli']], extra: [['cheese']], groups: ['carbs', 'dairy', 'veg'], steps: 'Make mac and cheese, adding small broccoli florets to the boiling pasta for the last 3 minutes. Stir in the cheese sauce.' },
+    { name: 'Garlic cheese toast bites', meal: 'Snack', need: [['bread', 'toast'], ['cheese']], extra: [['garlic'], ['butter']], groups: ['carbs', 'dairy'], steps: 'Butter bread, sprinkle with garlic and cheese, and toast until melty. Cut into small squares.' },
+    { name: 'Crispy potato bites', meal: 'Snack', need: [['potato', 'fries']], extra: [['cheese'], ['ranch']], groups: ['carbs'], steps: 'Toss small potato cubes with oil and salt. Air-fry at 400°F or bake at 425°F about 15 minutes until crispy. Dip in ranch.' },
+    { name: 'Banana & peanut butter', meal: 'Snack', need: [['banana'], ['peanut butter']], extra: [['cinnamon']], groups: ['fruit', 'protein'], steps: 'Slice a banana and dip in or drizzle with peanut butter. Sweet, filling, and ready in a minute.' },
+    { name: 'Corn & cheese cup', meal: 'Snack', need: [['corn'], ['cheese']], extra: [['butter'], ['hot sauce']], groups: ['veg', 'dairy'], steps: 'Microwave a cup of corn 1 minute, stir in butter and a little shredded cheese, and add a dash of hot sauce for a Hot Cheetos kick.' }
   ];
   const PANTRY_STAPLES = ['Eggs', 'Bread', 'Butter', 'Cheese', 'Milk', 'Garlic', 'Pasta', 'Tortillas'];
 
