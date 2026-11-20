@@ -589,11 +589,25 @@
     return GROUP_KEYS.map(k => '<option value="' + k + '">' + GROUPS[k].label + '</option>').join('');
   }
 
+  // food picker: tap a food-group button to drop down its foods
+  let openCats = new Set();
   function renderPicker() {
-    const chips = state.foods.map(f =>
-      '<button type="button" class="chip' + (selected.has(f.id) ? ' on' : '') + '" data-food="' + f.id + '" aria-pressed="' + selected.has(f.id) + '">' + esc(f.name) + '</button>');
-    extras.forEach((f, i) => chips.push('<button type="button" class="chip on" data-extra="' + i + '" title="Remove">' + esc(f.name) + '<span class="x">×</span></button>'));
-    $('#pick-foods').innerHTML = chips.join('') || '<p class="muted">Add foods on the "My foods" tab.</p>';
+    if (!state.foods.length) { $('#pick-foods').innerHTML = '<p class="muted">Add foods on the "My foods" tab.</p>'; updateCalEstimate(); return; }
+    const picked = state.foods.filter(f => selected.has(f.id));
+    let html = '<div class="picked-row">' + (picked.length || extras.length
+      ? '<span class="picked-lbl">Picked:</span>' + picked.map(f => '<button type="button" class="chip on" data-food="' + f.id + '" title="Remove">' + esc(f.name) + '<span class="x">×</span></button>').join('')
+        + extras.map((f, i) => '<button type="button" class="chip on" data-extra="' + i + '" title="Remove">' + esc(f.name) + '<span class="x">×</span></button>').join('')
+      : '<span class="picked-lbl muted">Nothing picked yet. Open a group below.</span>') + '</div>';
+    html += '<div class="cat-list">' + GROUP_KEYS.map(g => {
+      const foods = state.foods.filter(f => f.groups[0] === g); if (!foods.length) return '';
+      const n = foods.filter(f => selected.has(f.id)).length, open = openCats.has(g);
+      return '<div class="cat' + (open ? ' open' : '') + '"><button type="button" class="cat-btn" data-cat="' + g + '" aria-expanded="' + open + '">'
+        + ico(GROUP_ICON[g]) + '<span>' + esc(GROUPS[g].label) + '</span>' + (n ? '<em class="cat-n">' + n + '</em>' : '') + '<span class="caret" aria-hidden="true">▾</span></button>'
+        + (open ? '<div class="cat-foods">' + foods.map(f => '<button type="button" class="chip' + (selected.has(f.id) ? ' on' : '') + '" data-food="' + f.id + '" aria-pressed="' + selected.has(f.id) + '">' + esc(f.name) + '</button>').join('') + '</div>' : '')
+        + '</div>';
+    }).join('') + '</div>';
+    $('#pick-foods').innerHTML = html;
+    sketchify($('#pick-foods'));
     updateCalEstimate();
   }
 
@@ -764,6 +778,8 @@
   });
 
   $('#pick-foods').addEventListener('click', (ev) => {
+    const cb = ev.target.closest('[data-cat]');
+    if (cb) { const g = cb.dataset.cat; openCats.has(g) ? openCats.delete(g) : openCats.add(g); renderPicker(); return; }
     const c = ev.target.closest('.chip'); if (!c) return;
     if (c.dataset.food) { selected.has(c.dataset.food) ? selected.delete(c.dataset.food) : selected.add(c.dataset.food); }
     else if (c.dataset.extra) { extras.splice(+c.dataset.extra, 1); }
@@ -803,7 +819,7 @@
   /* ---- editing a log ---- */
   let editingId = null;
   function resetLogForm() {
-    selected = new Set(); extras = []; calTouched = false; editingId = null;
+    selected = new Set(); extras = []; calTouched = false; editingId = null; openCats = new Set();
     $('#log-note').value = ''; $('#log-cal').value = ''; $('#log-time').value = localInputValue(new Date());
     setLogMeal(mealForTime(new Date()), false); updatePastNote();
     $('#log-submit').innerHTML = 'Log it 💛'; $('#edit-cancel').hidden = true; $('#edit-banner').hidden = true;
@@ -819,6 +835,7 @@
     calTouched = true; $('#log-cal').value = e.cal || '';
     $('#log-note').value = e.note || '';
     document.querySelector('.tabs button[data-tab="today"]').click();
+    openCats = new Set(state.foods.filter(f => selected.has(f.id)).map(f => f.groups[0]));
     renderPicker();
     $('#log-submit').innerHTML = 'Save changes ✓'; $('#edit-cancel').hidden = false;
     const b = $('#edit-banner'); b.hidden = false;
