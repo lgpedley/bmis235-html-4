@@ -245,3 +245,24 @@ footer { max-width: 1100px; margin: 0 auto; padding: 10px 16px 40px; font-size: 
 .fod { margin: 12px 0 -4px; font-weight: 800; font-size: .8rem; text-transform: uppercase; letter-spacing: .06em; color: var(--ink-soft); }
 .chart.plate .pemo { font-size: 26px; fill: initial; }
 .top { border-bottom: 5px solid var(--burnt); }
+
+/* ---------- brown cards (alternate with the light ones) ---------- */
+:root { --brown-card: #5E3B2C; --on-brown: #FCF4D2; --on-brown-soft: #E8D6C4; }
+.card.brown, .groups-grid .group-card:nth-child(even) {
+  background: var(--brown-card); border-color: var(--brown-card); color: var(--on-brown);
+}
+.card.brown .muted, .card.brown details.other summary,
+.groups-grid .group-card:nth-child(even) .muted { color: var(--on-brown-soft); }
+.card.brown a { color: var(--warmpink); }
+.card.brown .btn:not(.ghost) { background: var(--warmpink); color: var(--garnet); }
+.card.brown .btn:not(.ghost):hover { background: #F4C9E1; }
+.card.brown .fact, .groups-grid .group-card:nth-child(even) .fact { background: var(--buttercup); color: var(--garnet); }
+.card.brown .fact .src, .groups-grid .group-card:nth-child(even) .fact .src { color: var(--ink-soft); }
+.groups-grid .group-card:nth-child(even) .amount, .card.brown .pill { color: var(--garnet); }
+.groups-grid .group-card:nth-child(even) .amount .muted { color: var(--ink-soft); }
+.groups-grid .group-card:nth-child(even) .fod { color: var(--on-brown-soft); }
+.card.brown .entries li { border-top-color: rgba(252,244,210,.25); }
+.card.brown .del { color: var(--on-brown-soft); }
+.card.brown .del:hover { color: var(--on-brown); }
+.card.brown .tag.meal { background: var(--buttercup); color: var(--garnet); }
+.card.brown .tip { color: var(--on-brown); }
