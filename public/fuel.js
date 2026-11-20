@@ -475,7 +475,7 @@
       s += '<line x1="' + left + '" x2="' + (W - right) + '" y1="' + cy + '" y2="' + cy + '" stroke="' + C.grid + '" stroke-dasharray="2 4"/>';
       if (rowLabels) s += '<text class="lab" x="0" y="' + (cy + 4) + '">' + new Date(d).toLocaleDateString([], { weekday: 'short', day: 'numeric' }) + '</text>';
       entriesOn(d).forEach(e => {
-        const tipTxt = (e.type === 'meal' ? 'Meal' : 'Snack') + ' · ' + fmtTime(e.ts) + ' · ' + e.foods.map(f => f.name).join(', ');
+        const tipTxt = mealLabel(e) + ' · ' + fmtTime(e.ts) + ' · ' + e.foods.map(f => f.name).join(', ');
         const cx = x(hourOf(e.ts));
         const mark = e.type === 'meal'
           ? '<circle cx="' + cx + '" cy="' + cy + '" r="7" fill="' + C.meal + '" stroke="' + C.card + '" stroke-width="2"/>'
@@ -554,7 +554,17 @@
   /* ---------------------------------------------------------------
      Rendering
      --------------------------------------------------------------- */
-  let logType = 'meal';
+  // which meal the log form is for; guessed from the time until you pick one
+  const MEAL_NAMES = { breakfast: 'Breakfast', lunch: 'Lunch', dinner: 'Dinner', snack: 'Snack' };
+  function mealForTime(d) { const h = hourOf(d); return h < 11 ? 'breakfast' : h < 15.5 ? 'lunch' : h < 17 ? 'snack' : 'dinner'; }
+  const autoMainMeal = () => { const m = mealForTime(new Date()); return m === 'snack' ? 'lunch' : m; };
+  let logMeal = mealForTime(new Date()), mealPicked = false;
+  let logType = logMeal === 'snack' ? 'snack' : 'meal';
+  function setLogMeal(m, picked) {
+    logMeal = m; logType = m === 'snack' ? 'snack' : 'meal'; if (picked !== undefined) mealPicked = picked;
+    document.querySelectorAll('.meal-pick button').forEach(x => { const on = x.dataset.meal === m; x.classList.toggle('on', on); x.setAttribute('aria-pressed', on); });
+  }
+  const mealLabel = (e) => MEAL_NAMES[e.meal] || (e.type === 'snack' ? 'Snack' : 'Meal');
   let selected = new Set();   // food ids picked in the log form
   let extras = [];            // "something not on my list" foods
 
@@ -597,7 +607,7 @@
 
   function entryRow(e) {
     const cal = state.settings.calories && e.cal ? ' <span class="muted">· ≈' + e.cal + ' cal</span>' : '';
-    return '<li><span class="time">' + fmtTime(e.ts) + '</span><span class="what"><span class="tag ' + e.type + '">' + (e.type === 'meal' ? 'Meal' : 'Snack') + '</span>'
+    return '<li><span class="time">' + fmtTime(e.ts) + '</span><span class="what"><span class="tag ' + e.type + '">' + mealLabel(e) + '</span>'
       + esc(e.foods.map(f => f.name).join(', ')) + cal + (e.note ? '<br><span class="muted">' + esc(e.note) + '</span>' : '') + '</span>'
       + '<button class="del fav-from" data-fav-entry="' + e.id + '" aria-label="Save as favorite" title="Save as a favorite meal">☆</button>'
       + '<button class="del" data-del="' + e.id + '" aria-label="Delete entry" title="Delete">×</button></li>';
@@ -716,10 +726,10 @@
     tooltip.hidden = true;
   }));
 
-  document.querySelectorAll('.seg button').forEach(b => b.addEventListener('click', () => {
-    logType = b.dataset.type;
-    document.querySelectorAll('.seg button').forEach(x => x.classList.toggle('on', x === b));
-  }));
+  document.querySelectorAll('.meal-pick button').forEach(b => b.addEventListener('click', () => setLogMeal(b.dataset.meal, true)));
+  setLogMeal(logMeal);
+  // until you pick one, the meal follows the time you enter
+  $('#log-time').addEventListener('change', () => { if (!mealPicked && $('#log-time').value) setLogMeal(mealForTime(new Date($('#log-time').value))); });
 
   $('#pick-foods').addEventListener('click', (ev) => {
     const c = ev.target.closest('.chip'); if (!c) return;
@@ -742,13 +752,14 @@
     if (!foods.length) { $('#pick-foods').scrollIntoView({ behavior: 'smooth', block: 'center' }); alert('Tap at least one food so I know what you had 💛'); return; }
     const t = $('#log-time').value ? new Date($('#log-time').value) : new Date();
     const entry = {
-      id: uid(), ts: t.toISOString(), type: logType, foods,
+      id: uid(), ts: t.toISOString(), type: logType, meal: logMeal, foods,
       cal: state.settings.calories ? (+$('#log-cal').value || null) : null,
       note: $('#log-note').value.trim()
     };
     state.entries.push(entry); save();
     selected = new Set(); extras = []; calTouched = false;
     $('#log-note').value = ''; $('#log-time').value = localInputValue(new Date());
+    setLogMeal(mealForTime(new Date()), false);
     render();
     showCheer(entry);
   });
@@ -1054,7 +1065,7 @@
     const lp = ev.target.closest('[data-log-plan]');
     if (lp) {
       const slot = lp.dataset.logPlan, p = dayPlan(isoDate(new Date()));
-      const entry = { id: uid(), ts: new Date().toISOString(), type: slot === 'snack' ? 'snack' : 'meal',
+      const entry = { id: uid(), ts: new Date().toISOString(), type: slot === 'snack' ? 'snack' : 'meal', meal: MEAL_NAMES[slot] ? slot : autoMainMeal(),
         foods: p[slot].map(it => ({ name: it.name, groups: it.groups.slice(), cal: it.cal || 0 })), note: 'From my plan' };
       entry.cal = state.settings.calories ? (entry.foods.reduce((n, f) => n + f.cal, 0) || null) : null;
       p.logged = p.logged || {}; p.logged[slot] = true;
@@ -1549,7 +1560,7 @@
     const lg = ev.target.closest('[data-howto-log]');
     if (lg) {
       const [kind, name, day, slot] = lg.dataset.howtoLog.split('|'), h = howtoData(kind, name);
-      const entry = { id: uid(), ts: new Date().toISOString(), type: slot === 'snack' ? 'snack' : 'meal',
+      const entry = { id: uid(), ts: new Date().toISOString(), type: slot === 'snack' ? 'snack' : 'meal', meal: MEAL_NAMES[slot] ? slot : autoMainMeal(),
         foods: [{ name: h.name, groups: h.groups.filter(g => GROUPS[g]), cal: h.cal || 0 }], cal: state.settings.calories ? (h.cal || null) : null, note: 'Made it myself' };
       if (day && slot && state.plan && state.plan[day]) { state.plan[day].logged = state.plan[day].logged || {}; state.plan[day].logged[slot] = true; }
       state.entries.push(entry); save();
@@ -1604,19 +1615,19 @@
         : '<p class="muted fav-empty">Pick foods below and tap <b>☆ Save as favorite</b>, or tap ☆ on anything in your history.</p>');
     sketchify($('#favs'));
   }
-  function addFavorite(foods, type) {
+  function addFavorite(foods, type, favMeal) {
     if (!foods.length) { alert('Pick at least one food first 💛'); return; }
     const suggested = foods.map(f => f.name).join(' + ');
     const name = prompt('Name this favorite:', suggested.length > 40 ? suggested.slice(0, 40) + '…' : suggested);
     if (name === null) return;
     state.favorites = state.favorites || [];
-    state.favorites.push({ id: uid(), name: name.trim() || suggested, type, foods: foods.map(f => ({ name: f.name, groups: f.groups.slice(), cal: f.cal || 0 })) });
+    state.favorites.push({ id: uid(), name: name.trim() || suggested, type, meal: favMeal, foods: foods.map(f => ({ name: f.name, groups: f.groups.slice(), cal: f.cal || 0 })) });
     save(); renderFavs();
   }
   $('#fav-save').addEventListener('click', () => {
     const foods = state.foods.filter(f => selected.has(f.id)).map(f => ({ name: f.name, groups: f.groups.slice(), cal: f.cal || 0 })).concat(extras);
     const before = (state.favorites || []).length;
-    addFavorite(foods, logType);
+    addFavorite(foods, logType, logMeal);
     if ((state.favorites || []).length > before) { selected = new Set(); extras = []; calTouched = false; renderPicker(); }
   });
   document.addEventListener('click', (ev) => {
@@ -1624,14 +1635,14 @@
     if (lg) {
       const f = (state.favorites || []).find(x => x.id === lg.dataset.favLog); if (!f) return;
       const cal = f.foods.reduce((n, x) => n + (x.cal || 0), 0);
-      const entry = { id: uid(), ts: new Date().toISOString(), type: f.type, foods: f.foods.map(x => Object.assign({}, x, { groups: x.groups.slice() })),
+      const entry = { id: uid(), ts: new Date().toISOString(), type: f.type, meal: f.meal || (f.type === 'snack' ? 'snack' : autoMainMeal()), foods: f.foods.map(x => Object.assign({}, x, { groups: x.groups.slice() })),
         cal: state.settings.calories ? (cal || null) : null, note: '★ ' + f.name };
       state.entries.push(entry); save(); render(); showCheer(entry); return;
     }
     const del = ev.target.closest('[data-fav-del]');
     if (del) { state.favorites = (state.favorites || []).filter(x => x.id !== del.dataset.favDel); save(); renderFavs(); return; }
     const fe = ev.target.closest('[data-fav-entry]');
-    if (fe) { const e = state.entries.find(x => x.id === fe.dataset.favEntry); if (e) addFavorite(e.foods, e.type); }
+    if (fe) { const e = state.entries.find(x => x.id === fe.dataset.favEntry); if (e) addFavorite(e.foods, e.type, e.meal); }
   });
 
   /* ===============================================================
@@ -1855,7 +1866,7 @@
     if (ev.target.closest('#pb-relog')) {
       const items = (state.plateSaved && state.plateSaved.items) || []; if (!items.length) return;
       const cal = items.reduce((n, x) => n + (x.cal || 0), 0);
-      const entry = { id: uid(), ts: new Date().toISOString(), type: 'meal', foods: items.map(x => Object.assign({}, x, { groups: x.groups.slice() })),
+      const entry = { id: uid(), ts: new Date().toISOString(), type: 'meal', meal: autoMainMeal(), foods: items.map(x => Object.assign({}, x, { groups: x.groups.slice() })),
         cal: state.settings.calories ? (cal || null) : null, note: '🍽 Plate of the week' };
       state.entries.push(entry); save(); render(); showCheer(entry); return;
     }
@@ -1869,7 +1880,7 @@
     if (ev.target.closest('#pb-log')) {
       if (!plateItems.length) return;
       const cal = plateItems.reduce((n, x) => n + (x.cal || 0), 0);
-      const entry = { id: uid(), ts: new Date().toISOString(), type: 'meal', plate: true, foods: plateItems.map(x => Object.assign({}, x)),
+      const entry = { id: uid(), ts: new Date().toISOString(), type: 'meal', meal: autoMainMeal(), plate: true, foods: plateItems.map(x => Object.assign({}, x)),
         cal: state.settings.calories ? (cal || null) : null, note: '🍽 Plate of the week' };
       const wk = isoDate(planDays(0)[0]);
       state.entries.push(entry); state.plateDone = wk;

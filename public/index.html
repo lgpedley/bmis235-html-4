@@ -92,9 +92,12 @@
         <h2>Log something you ate</h2>
         <div class="favs" id="favs"></div>
         <form id="log-form">
-          <div class="seg" role="group" aria-label="Meal or snack">
-            <button type="button" data-type="meal" class="on">Meal</button>
-            <button type="button" data-type="snack">Snack</button>
+          <p class="lbl">Which meal?</p>
+          <div class="seg meal-pick" role="group" aria-label="Which meal">
+            <button type="button" data-meal="breakfast">Breakfast</button>
+            <button type="button" data-meal="lunch">Lunch</button>
+            <button type="button" data-meal="dinner">Dinner</button>
+            <button type="button" data-meal="snack">Snack</button>
           </div>
 
           <label class="lbl" for="log-time">When</label>
