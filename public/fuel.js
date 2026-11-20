@@ -204,7 +204,7 @@
      --------------------------------------------------------------- */
   const ICONS = { '🍽': 'plate', '🍞': 'bread', '🐟': 'fish', '🥦': 'broccoli', '🍓': 'strawberry', '🧀': 'cheese', '🌶': 'chili',
     '💛': 'heart', '📊': 'chart', '💡': 'bulb', '🌈': 'rainbow', '💪': 'dumbbell', '🥔': 'potato', '🌽': 'corn', '🔥': 'fire',
-    '🔋': 'battery', '✨': 'sparkle', '🎉': 'sparkle', '☀': 'sun', '🌱': 'sprout', '⏱': 'timer', '📅': 'calendar', '🛒': 'cart', '🔍': 'search' };
+    '🔋': 'battery', '✨': 'sparkle', '🎉': 'sparkle', '☀': 'sun', '🌱': 'sprout', '⏱': 'timer', '📅': 'calendar', '🛒': 'cart', '🔍': 'search', '🍳': 'pan' };
   const ICON_RE = new RegExp('(' + Object.keys(ICONS).join('|') + ')\uFE0F?', 'gu');
   const ICON_TEST = new RegExp('(' + Object.keys(ICONS).join('|') + ')', 'u');  // no "g" flag, so repeated .test() calls are reliable
   const GROUP_ICON = { carbs: 'bread', protein: 'fish', veg: 'broccoli', fruit: 'strawberry', dairy: 'cheese', fun: 'chili' };
@@ -561,7 +561,7 @@
   function render() {
     document.body.classList.toggle('no-cal', !state.settings.calories);
     $('#cal-toggle').checked = state.settings.calories;
-    renderToday(); renderWeek(); renderRecipe(); renderLearn(); renderFoods(); renderPlan(); renderPlannedToday(); renderIdeas();
+    renderToday(); renderWeek(); renderRecipe(); renderLearn(); renderFoods(); renderPlan(); renderPlannedToday(); renderIdeas(); renderPantry();
     sketchify(document.body);
   }
 
@@ -1148,7 +1148,7 @@
       + 'That\'s a great base, because those flavors are easy to build new foods around.</p>'
       + '<p>Your list is strongest in <b>' + esc(GROUPS[strongest].label.toLowerCase()) + '</b>'
       + (missing.length ? ' and has <b>no ' + missing.map(g => GROUPS[g].label.toLowerCase()).join(' or ') + '</b> yet' : '')
-      + (thin.length ? ', with only a few ' + thin.map(g => GROUPS[g].label.toLowerCase()).join(' and ') : '') + '. The ideas below lean that way, using flavors you already like.</p>'
+      + (thin.length ? ', with only a few ' + thin.map(g => GROUPS[g].label.toLowerCase()).join(' and ') : '') + '. The <b>Ideas</b> tab leans that way, using flavors you already like.</p>'
       + '<div class="traits">' + top.map(t => '<span class="pill">' + esc(TRAITS[t].label) + '</span>').join('') + '</div></div>'
       + '<div class="pbars"><p class="lbl">Foods on your list, by group</p>' + bars + '</div></div>';
 
@@ -1215,6 +1215,103 @@
     const hd = ev.target.closest('[data-idea-hide]');
     if (hd) { state.hiddenIdeas = (state.hiddenIdeas || []).concat(hd.dataset.ideaHide); save(); renderIdeas(); sketchify($('#tab-ideas')); return; }
     if (ev.target.id === 'ideas-unhide') { state.hiddenIdeas = []; save(); renderIdeas(); sketchify($('#tab-ideas')); }
+  });
+
+  /* ===============================================================
+     WHAT CAN I MAKE? Match pantry ingredients to simple dishes.
+     need = list of requirements; each requirement is a list of
+     keywords (any one counts). Salt, pepper and oil are assumed.
+     =============================================================== */
+  const PANTRY_DISHES = [
+    { name: 'Buttered toast', meal: 'Breakfast', need: [['bread', 'toast'], ['butter']], extra: [['jam', 'honey', 'cinnamon']], groups: ['carbs'], steps: 'Toast the bread and butter it while it\'s hot.' },
+    { name: 'Garlic toast', meal: 'Side', need: [['bread', 'toast'], ['butter'], ['garlic']], extra: [['parmesan', 'cheese']], groups: ['carbs'], steps: 'Mix soft butter with garlic, spread on bread and toast at 400°F for 6–8 min.' },
+    { name: 'Grilled cheese', meal: 'Lunch', need: [['bread', 'toast'], ['cheese']], extra: [['butter'], ['pickle']], groups: ['carbs', 'dairy'], steps: 'Butter the outside of two slices, fill with cheese and cook in a pan 3 min per side.' },
+    { name: 'Cheesy egg toast', meal: 'Breakfast', need: [['bread', 'toast'], ['egg']], extra: [['cheese'], ['butter']], groups: ['carbs', 'protein'], steps: 'Scramble eggs (add cheese at the end) and pile onto buttered toast.' },
+    { name: 'Scrambled eggs', meal: 'Breakfast', need: [['egg']], extra: [['butter'], ['cheese'], ['milk']], groups: ['protein'], steps: 'Whisk eggs with a splash of milk and cook low and slow in butter, stirring.' },
+    { name: 'Breakfast potato hash', meal: 'Breakfast', need: [['potato', 'hash brown'], ['egg']], extra: [['cheese'], ['onion', 'pepper']], groups: ['carbs', 'protein'], steps: 'Pan-fry small potato cubes until crispy, then crack eggs on top and cover until set.' },
+    { name: 'Peanut butter banana toast', meal: 'Breakfast', need: [['bread', 'toast'], ['peanut butter'], ['banana']], extra: [['honey']], groups: ['carbs', 'protein', 'fruit'], steps: 'Spread peanut butter on toast and top with banana slices.' },
+    { name: 'Apple & peanut butter', meal: 'Snack', need: [['apple'], ['peanut butter']], extra: [], groups: ['fruit', 'protein'], steps: 'Slice the apple and dip!' },
+    { name: 'Fruit & cheese snack plate', meal: 'Snack', need: [['cheese', 'string cheese'], ['apple', 'grape', 'strawberr', 'clementine', 'berr', 'banana']], extra: [['cracker'], ['pickle']], groups: ['fruit', 'dairy'], steps: 'Arrange on a plate. A real mini-meal instead of grazing.' },
+    { name: 'Milk smoothie', meal: 'Breakfast', need: [['milk'], ['banana', 'strawberr', 'berr', 'mango']], extra: [['peanut butter'], ['honey']], groups: ['fruit', 'dairy'], steps: 'Blend 1 cup milk with your fruit (frozen fruit makes it thick). No yogurt needed.' },
+    { name: 'Butter noodles', meal: 'Lunch', need: [['pasta', 'noodle', 'spaghetti'], ['butter']], extra: [['parmesan'], ['garlic']], groups: ['carbs'], steps: 'Boil noodles, drain, and toss with butter, salt and parmesan.' },
+    { name: 'Pasta alfredo', meal: 'Dinner', need: [['pasta', 'noodle', 'fettuccine'], ['alfredo']], extra: [['broccoli', 'spinach', 'pea'], ['salmon', 'shrimp']], groups: ['carbs', 'dairy'], steps: 'Boil pasta, drain, and stir in warm alfredo sauce.' },
+    { name: 'Broccoli alfredo', meal: 'Dinner', need: [['pasta', 'noodle'], ['alfredo'], ['broccoli']], extra: [['parmesan']], groups: ['carbs', 'dairy', 'veg'], steps: 'Add broccoli to the pasta pot for the last 3 min, drain, stir in alfredo.' },
+    { name: 'Rosatella pasta', meal: 'Dinner', need: [['pasta', 'noodle'], ['rosatella', 'rosa sauce', 'vodka sauce']], extra: [['spinach', 'broccoli'], ['parmesan']], groups: ['carbs', 'dairy'], steps: 'Boil pasta and toss with warm rosatella sauce.' },
+    { name: 'Homemade mac & cheese', meal: 'Dinner', need: [['pasta', 'noodle', 'macaroni'], ['cheese'], ['milk']], extra: [['butter'], ['broccoli', 'cauliflower']], groups: ['carbs', 'dairy'], steps: 'Boil pasta. In the same pot melt butter, add milk and shredded cheese until smooth, stir pasta back in.' },
+    { name: 'Garlic butter shrimp noodles', meal: 'Dinner', need: [['shrimp'], ['pasta', 'noodle'], ['butter']], extra: [['garlic'], ['parmesan']], groups: ['protein', 'carbs'], steps: 'Sauté shrimp in butter (and garlic) 4–5 min; toss with cooked noodles.' },
+    { name: 'Garlic butter salmon', meal: 'Dinner', need: [['salmon'], ['butter']], extra: [['garlic'], ['lemon']], groups: ['protein'], steps: 'Top salmon with butter and garlic and bake at 400°F for 12–15 min.' },
+    { name: 'Salmon & broccoli sheet pan', meal: 'Dinner', need: [['salmon'], ['broccoli']], extra: [['potato'], ['butter', 'garlic']], groups: ['protein', 'veg'], steps: 'Salmon on one side, broccoli on the other. Bake at 400°F for 12–15 min.' },
+    { name: 'Salmon tacos', meal: 'Dinner', need: [['salmon'], ['tortilla']], extra: [['corn'], ['cheese'], ['lime']], groups: ['protein', 'carbs'], steps: 'Bake salmon, flake into warm tortillas and top with corn and cheese.' },
+    { name: 'Steak & potatoes', meal: 'Dinner', need: [['steak'], ['potato', 'fries']], extra: [['corn', 'broccoli', 'green bean'], ['butter']], groups: ['protein', 'carbs'], steps: 'Roast potatoes at 425°F for 25 min; sear steak 3–4 min per side, rest 5 min.' },
+    { name: 'Steak & cheese melt', meal: 'Lunch', need: [['steak'], ['bread', 'toast', 'bun'], ['cheese']], extra: [['butter'], ['onion', 'pepper']], groups: ['protein', 'carbs', 'dairy'], steps: 'Sear thin steak slices, layer with cheese in bread and cook like grilled cheese.' },
+    { name: 'Steak quesadilla', meal: 'Lunch', need: [['tortilla'], ['cheese'], ['steak', 'beef']], extra: [['corn'], ['pepper']], groups: ['protein', 'carbs', 'dairy'], steps: 'Fill a tortilla with cheese and sliced steak, fold, and crisp 2–3 min per side.' },
+    { name: 'Cheese quesadilla', meal: 'Lunch', need: [['tortilla'], ['cheese']], extra: [['corn'], ['bean']], groups: ['carbs', 'dairy'], steps: 'Cheese in a tortilla, fold, and crisp in a dry pan until melty.' },
+    { name: 'Burger', meal: 'Dinner', need: [['beef', 'burger'], ['bun', 'bread']], extra: [['cheese'], ['pickle'], ['ketchup', 'mustard', 'mayo']], groups: ['protein', 'carbs'], steps: 'Shape a patty, cook 4 min per side, and build with your toppings.' },
+    { name: 'Cheeseburger potato bowl', meal: 'Dinner', need: [['beef', 'burger'], ['potato', 'fries']], extra: [['cheese'], ['pickle']], groups: ['protein', 'carbs'], steps: 'Crispy potatoes or fries in a bowl, topped with browned beef, cheese and pickles.' },
+    { name: 'Tuna melt', meal: 'Lunch', need: [['tuna'], ['bread', 'toast'], ['cheese']], extra: [['mayo'], ['pickle']], groups: ['protein', 'carbs', 'dairy'], steps: 'Mix tuna with a little mayo, top bread with it and cheese, and cook like grilled cheese.' },
+    { name: 'French bread pizza', meal: 'Dinner', need: [['bread', 'garlic bread', 'english muffin', 'bagel'], ['pizza sauce', 'marinara', 'rosatella', 'tomato sauce'], ['cheese', 'mozzarella']], extra: [['broccoli', 'pepper', 'mushroom']], groups: ['carbs', 'dairy'], steps: 'Sauce and cheese on bread; bake at 425°F for 8–10 min.' },
+    { name: 'Loaded baked potato', meal: 'Dinner', need: [['potato']], extra: [['butter'], ['cheese'], ['broccoli'], ['steak', 'beef']], groups: ['carbs'], steps: 'Microwave a pricked potato 8–10 min, split, and add your toppings.' },
+    { name: 'Mashed potatoes', meal: 'Side', need: [['potato'], ['butter'], ['milk']], extra: [['garlic'], ['cheese']], groups: ['carbs', 'dairy'], steps: 'Boil peeled potato chunks 15 min, drain, mash with butter and warm milk.' },
+    { name: 'Corn & potato chowder', meal: 'Dinner', need: [['corn'], ['potato'], ['milk']], extra: [['cheese'], ['broth'], ['butter']], groups: ['carbs', 'veg', 'dairy'], steps: 'Simmer diced potato and corn in broth or water 15 min, add milk and cheese.' },
+    { name: 'Buttered sweet corn', meal: 'Side', need: [['corn'], ['butter']], extra: [['parmesan']], groups: ['veg'], steps: 'Boil or microwave corn 4–5 min, then butter and salt.' },
+    { name: 'Cheesy broccoli', meal: 'Side', need: [['broccoli'], ['cheese']], extra: [['butter'], ['garlic']], groups: ['veg', 'dairy'], steps: 'Steam broccoli 4 min and melt cheese over the top.' },
+    { name: 'Garlic roasted broccoli', meal: 'Side', need: [['broccoli']], extra: [['garlic'], ['parmesan']], groups: ['veg'], steps: 'Toss with oil and salt, roast at 425°F for 15 min until crispy edges.' },
+    { name: 'Crackers, cheese & pickles', meal: 'Snack', need: [['cracker'], ['cheese']], extra: [['pickle'], ['apple', 'grape']], groups: ['carbs', 'dairy'], steps: 'Plate it up. Salty, crunchy and filling.' }
+  ];
+  const PANTRY_STAPLES = ['Eggs', 'Bread', 'Butter', 'Cheese', 'Milk', 'Garlic', 'Pasta', 'Tortillas'];
+
+  function pantryHas(words) {
+    const p = (state.pantry || []).map(x => x.toLowerCase());
+    return words.some(w => p.some(x => x.includes(w) || (x.length > 3 && w.includes(x))));
+  }
+  function renderPantry() {
+    const pantry = state.pantry || [];
+    $('#pantry-chips').innerHTML = pantry.length
+      ? pantry.map((n, i) => '<span class="chip on">' + esc(n) + '<button class="x" data-pantry-del="' + i + '" aria-label="Remove ' + esc(n) + '">×</button></span>').join('')
+        + '<button class="linkish" id="pantry-clear">Clear all</button>'
+      : '<span class="muted">No ingredients yet. Add what\'s in your kitchen!</span>';
+    const have = pantry.map(x => x.toLowerCase());
+    const quick = state.foods.filter(f => !/sauce/i.test(f.name) || /alfredo|rosatella/i.test(f.name)).map(f => f.name).concat(PANTRY_STAPLES)
+      .filter((n, i, a) => a.findIndex(x => x.toLowerCase() === n.toLowerCase()) === i && !have.includes(n.toLowerCase())).slice(0, 18);
+    $('#pantry-quick').innerHTML = quick.map(n => '<button type="button" class="chip" data-pantry-quick="' + esc(n) + '">+ ' + esc(n) + '</button>').join('');
+
+    if (!pantry.length) { $('#pantry-results').innerHTML = ''; return; }
+    const results = PANTRY_DISHES.map(d => {
+      const missing = d.need.filter(req => !pantryHas(req));
+      const extras = d.extra.filter(req => pantryHas(req)).map(req => req.find(w => pantryHas([w])) || req[0]);
+      return { d, missing, extras, score: (d.need.length - missing.length) / d.need.length };
+    }).filter(r => r.score > 0 && r.missing.length <= 2).sort((a, b) => a.missing.length - b.missing.length || b.extras.length - a.extras.length || b.d.need.length - a.d.need.length);
+    const ready = results.filter(r => !r.missing.length), almost = results.filter(r => r.missing.length);
+    const cap = (w) => w.charAt(0).toUpperCase() + w.slice(1);
+    const card = (r) => {
+      const add = r.missing.map(req => cap(req[0]));
+      return '<div class="idea dish"><div class="dish-top"><h3>' + esc(r.d.name) + '</h3><span class="pill">' + esc(r.d.meal) + '</span></div>'
+        + '<div class="meta">' + r.d.groups.map(g => '<span class="pill">' + ico(GROUP_ICON[g]) + ' ' + esc(GROUPS[g].label) + '</span>').join('') + '</div>'
+        + '<p>' + esc(r.d.steps) + '</p>'
+        + (r.extras.length ? '<p class="muted">✓ You also have ' + esc(r.extras.join(', ')) + ' to add.</p>' : '')
+        + (add.length ? '<p class="need">Missing: <b>' + esc(add.join(', ')) + '</b></p><div class="idea-actions"><button class="btn small" data-pantry-shop="' + esc(add.join('|')) + '">🛒 Add missing to list</button></div>' : '')
+        + '</div>';
+    };
+    $('#pantry-results').innerHTML =
+      '<h3 class="sub">🎉 Ready to make (' + ready.length + ')</h3>'
+      + (ready.length ? '<div class="idea-grid">' + ready.map(card).join('') + '</div>' : '<p class="muted">Nothing complete yet. Check the "almost there" list below!</p>')
+      + (almost.length ? '<h3 class="sub">🛒 Almost there: missing 1–2 things (' + almost.length + ')</h3><div class="idea-grid">' + almost.slice(0, 9).map(card).join('') + '</div>' : '');
+  }
+  function addPantry(text) {
+    state.pantry = state.pantry || [];
+    text.split(/[,\n]/).map(t => t.trim()).filter(Boolean).forEach(n => {
+      if (!state.pantry.some(x => x.toLowerCase() === n.toLowerCase())) state.pantry.push(n.charAt(0).toUpperCase() + n.slice(1));
+    });
+    save(); renderPantry(); sketchify($('#tab-ideas'));
+  }
+  $('#pantry-form').addEventListener('submit', (ev) => { ev.preventDefault(); const i = $('#pantry-input'); addPantry(i.value); i.value = ''; i.focus(); });
+  document.addEventListener('click', (ev) => {
+    const q = ev.target.closest('[data-pantry-quick]'); if (q) { addPantry(q.dataset.pantryQuick); return; }
+    const d = ev.target.closest('[data-pantry-del]');
+    if (d) { state.pantry.splice(+d.dataset.pantryDel, 1); save(); renderPantry(); sketchify($('#tab-ideas')); return; }
+    if (ev.target.id === 'pantry-clear') { state.pantry = []; save(); renderPantry(); sketchify($('#tab-ideas')); return; }
+    const sh = ev.target.closest('[data-pantry-shop]');
+    if (sh) { const n = addToShopping(sh.dataset.pantryShop.split('|')); renderPlan(); sketchify($('#tab-plan')); flash(sh, '✓ Added ' + n + ' to this week\'s list'); }
   });
 
   render();
