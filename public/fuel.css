@@ -1252,3 +1252,58 @@ body.mag[data-theme="draper"] { background-color: #F6EADF; }
 /* light pastel background instead of beige */
 body.mag { background-color: #FBE4EE; }
 body.mag[data-theme="bubblegum"] { --p-bg: #FBE4EE; }
+
+/* ---------- plate of the week ---------- */
+.mag .card.plate-builder { background: var(--p-card); }
+.pb-grid { display: grid; grid-template-columns: minmax(260px, 360px) 1fr; gap: 24px; align-items: start; }
+@media (max-width: 760px) { .pb-grid { grid-template-columns: 1fr; } }
+.pb-plate { border-radius: 16px; padding: 6px; transition: background .2s; }
+.pb-plate.over { background: var(--p-a1); }
+.big-plate { width: 100%; height: auto; display: block; }
+.big-plate .rim { fill: #FFFFFF; stroke: var(--m-ink); stroke-width: 1.5; }
+.big-plate .zone path, .big-plate .zone circle { fill: var(--p-card); stroke: var(--m-ink); stroke-width: 1.5; stroke-dasharray: 5 4; transition: fill .25s; }
+.big-plate .zone.on path, .big-plate .zone.on circle { stroke-dasharray: none; }
+.big-plate .z-veg.on path { fill: var(--m-olive); } .big-plate .z-fruit.on path { fill: var(--m-pink); }
+.big-plate .z-carbs.on path { fill: #E8E6B8; } .big-plate .z-protein.on path { fill: var(--m-hot); }
+.big-plate .z-dairy.on circle { fill: #F9DCEA; }
+.big-plate .zone use { color: var(--m-ink); opacity: .45; } .big-plate .zone.on use { opacity: 1; }
+.big-plate .zone text { font: 600 12px "DM Mono", monospace; text-transform: uppercase; letter-spacing: .06em; fill: var(--m-ink); }
+.big-plate .zone { transform-box: fill-box; transform-origin: center; }
+.big-plate .zone.wiggle { animation: wig .55s ease; }
+@keyframes wig { 0%,100% { transform: rotate(0) scale(1); } 20% { transform: rotate(-6deg) scale(1.06); } 45% { transform: rotate(5deg) scale(1.04); } 70% { transform: rotate(-3deg); } }
+@media (prefers-reduced-motion: reduce) { .big-plate .zone.wiggle { animation: none; } }
+.pb-note { font-family: "Caveat", cursive; font-size: 1.5rem; line-height: 1.2; margin: 8px 4px; }
+.pb-items { display: flex; flex-wrap: wrap; gap: 6px; margin: 6px 0; }
+.pb-items .pitem { cursor: pointer; font: inherit; font-size: .85rem; padding: 3px 10px; }
+.pb-actions { display: flex; gap: 10px; flex-wrap: wrap; margin-top: 10px; }
+.pb-actions .btn { margin-top: 0; }
+.tray-row { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; margin-bottom: 12px; }
+.tray-lbl { font: 500 .7rem "DM Mono", monospace; text-transform: uppercase; letter-spacing: .1em; width: 100%; }
+.tray-row .chip { cursor: grab; }
+.pb-done { display: flex; gap: 22px; align-items: center; flex-wrap: wrap; }
+
+/* ---------- confetti + stickers ---------- */
+.confetti { position: fixed; z-index: 200; pointer-events: none; }
+.sticker-badge { --bg: #F3B3D3; width: 132px; height: 132px; border-radius: 50%; background: var(--bg); color: #1C1A14;
+  border: 2.5px solid #1C1A14; box-shadow: 0 0 0 6px #FFFFFF, 0 8px 18px rgba(0,0,0,.18); transform: rotate(var(--rot, 0deg));
+  display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center; padding: 10px; flex: 0 0 auto; }
+.sticker-badge .ico { width: 44px; height: 44px; margin-bottom: 2px; color: #1C1A14; }
+.sticker-badge b { font-family: "Caveat", cursive; font-size: 1.45rem; line-height: 1; }
+.sticker-badge span { font: 500 .58rem "DM Mono", monospace; text-transform: uppercase; letter-spacing: .08em; margin-top: 3px; }
+.sticker-pop { position: fixed; inset: 0; z-index: 150; display: flex; flex-direction: column; align-items: center; justify-content: center;
+  background: rgba(36,48,26,.35); cursor: pointer; animation: fadein .2s ease; padding: 16px; }
+.sticker-pop.out { opacity: 0; transition: opacity .3s; }
+.pop-title { font-family: "Caveat", cursive; font-size: 2.4rem; color: #FFFBF4; margin: 0 0 18px; text-shadow: 0 2px 0 #24301A; }
+.pop-hint { font: 500 .7rem "DM Mono", monospace; text-transform: uppercase; letter-spacing: .1em; color: #FFFBF4; margin-top: 22px; }
+.pop-row { display: flex; gap: 22px; flex-wrap: wrap; justify-content: center; }
+.pop-row .sticker-badge { animation: stick .55s cubic-bezier(.2,1.6,.4,1) both; }
+.pop-row .sticker-badge:nth-child(2) { animation-delay: .12s; } .pop-row .sticker-badge:nth-child(3) { animation-delay: .24s; }
+@keyframes stick { from { transform: scale(.2) rotate(-40deg); opacity: 0; } to { transform: scale(1) rotate(var(--rot)); opacity: 1; } }
+@keyframes fadein { from { opacity: 0; } }
+@media (prefers-reduced-motion: reduce) { .pop-row .sticker-badge { animation: none; } }
+.sticker-grid { display: flex; flex-wrap: wrap; gap: 26px; padding: 10px 6px; }
+.sb-item { position: relative; }
+.sb-item .sticker-badge { width: 112px; height: 112px; }
+.sb-item .sticker-badge b { font-size: 1.25rem; }
+.sb-count { position: absolute; right: -6px; bottom: -4px; background: #1C1A14; color: #FFFBF4; font: 600 .75rem "DM Mono", monospace; padding: 2px 7px; border-radius: 999px; font-style: normal; }
+.sticker-badge { padding: 16px; } .sticker-badge span { font-size: .52rem; }

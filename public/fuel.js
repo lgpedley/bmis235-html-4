@@ -204,7 +204,7 @@
      --------------------------------------------------------------- */
   const ICONS = { '🍽': 'plate', '🍞': 'bread', '🐟': 'fish', '🥦': 'broccoli', '🍓': 'strawberry', '🧀': 'cheese', '🌶': 'chili', '🍭': 'lollipop',
     '💛': 'heart', '📊': 'chart', '💡': 'bulb', '🌈': 'rainbow', '💪': 'dumbbell', '🥔': 'potato', '🌽': 'corn', '🔥': 'fire',
-    '🔋': 'battery', '✨': 'sparkle', '🎉': 'sparkle', '☀': 'sun', '🌱': 'sprout', '⏱': 'timer', '📅': 'calendar', '🛒': 'cart', '🔍': 'search', '🍳': 'pan', '🧂': 'shaker' };
+    '🔋': 'battery', '✨': 'sparkle', '🎉': 'sparkle', '☀': 'sun', '🌱': 'sprout', '⏱': 'timer', '📅': 'calendar', '🛒': 'cart', '🔍': 'search', '🍳': 'pan', '🧂': 'shaker', '⭐': 'sparkle' };
   const ICON_RE = new RegExp('(' + Object.keys(ICONS).join('|') + ')\uFE0F?', 'gu');
   const ICON_TEST = new RegExp('(' + Object.keys(ICONS).join('|') + ')', 'u');  // no "g" flag, so repeated .test() calls are reliable
   const GROUP_ICON = { carbs: 'bread', protein: 'fish', veg: 'broccoli', fruit: 'strawberry', dairy: 'cheese', fun: 'lollipop' };
@@ -571,7 +571,7 @@
     applyTheme();
     document.body.classList.toggle('no-cal', !state.settings.calories);
     $('#cal-toggle').checked = state.settings.calories;
-    renderToday(); renderWeek(); renderRecipe(); renderLearn(); renderFoods(); renderPlan(); renderPlannedToday(); renderIdeas(); renderPantry(); renderExtras(); renderFavs(); renderInstall();
+    renderToday(); renderWeek(); renderRecipe(); renderLearn(); renderFoods(); renderPlan(); renderPlannedToday(); renderIdeas(); renderPantry(); renderExtras(); renderFavs(); renderInstall(); renderPlateBuilder(); renderStickerBook();
     sketchify(document.body);
   }
 
@@ -996,6 +996,7 @@
   function showCheer(entry) {
     const ch = $('#cheer'); ch.innerHTML = cheerFor(entry); ch.hidden = false; sketchify(ch);
     ch.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+    celebrate(entry);
   }
 
   // ---- picker dialog ----
@@ -1627,6 +1628,161 @@
   if ('serviceWorker' in navigator && location.protocol.startsWith('http')) {
     window.addEventListener('load', () => navigator.serviceWorker.register('sw.js').catch(() => {}));
   }
+
+  /* ===============================================================
+     CONFETTI + STICKERS
+     =============================================================== */
+  const reduceMotion = () => window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  const CONF_COLORS = ['#F3B3D3', '#C8C46C', '#EE6A3C', '#24301A', '#FFFBF4', '#6B1F2A'];
+  function confetti() {
+    if (reduceMotion()) return;
+    const cx = window.innerWidth / 2, cy = window.innerHeight * 0.42;
+    for (let i = 0; i < 48; i++) {
+      const el = document.createElement('span'); el.className = 'confetti';
+      const c = CONF_COLORS[i % CONF_COLORS.length], star = i % 3 !== 0, size = 10 + Math.random() * 14;
+      el.style.cssText = 'left:' + cx + 'px;top:' + cy + 'px;width:' + size + 'px;height:' + size + 'px';
+      el.innerHTML = star
+        ? '<svg viewBox="0 0 40 40" width="100%" height="100%"><path d="M20 1l4.6 13.4L39 15l-11.4 8.7L31.8 38 20 29.6 8.2 38l4.2-14.3L1 15l14.4-.6z" fill="' + c + '" stroke="#1C1A14" stroke-width="1.5"/></svg>'
+        : '<svg viewBox="0 0 10 10" width="100%" height="100%"><circle cx="5" cy="5" r="4" fill="' + c + '"/></svg>';
+      document.body.appendChild(el);
+      const ang = Math.random() * Math.PI * 2, dist = 140 + Math.random() * 260;
+      const dx = Math.cos(ang) * dist, dy = Math.sin(ang) * dist * 0.75 - 80, r = (Math.random() - .5) * 720;
+      el.animate([
+        { transform: 'translate(-50%,-50%) scale(.3) rotate(0deg)', opacity: 1 },
+        { transform: 'translate(calc(-50% + ' + dx + 'px), calc(-50% + ' + dy + 'px)) scale(1) rotate(' + r + 'deg)', opacity: 1, offset: .65 },
+        { transform: 'translate(calc(-50% + ' + dx * 1.1 + 'px), calc(-50% + ' + (dy + 160) + 'px)) scale(.8) rotate(' + r * 1.4 + 'deg)', opacity: 0 }
+      ], { duration: 1300 + Math.random() * 700, easing: 'cubic-bezier(.15,.8,.3,1)' }).onfinish = () => el.remove();
+    }
+  }
+  const GROUP_WORD = { carbs: 'Carbs', protein: 'Protein', veg: 'Veggies', fruit: 'Fruit', dairy: 'Dairy' };
+  function stickersFor(entry) {
+    const out = [], h = hourOf(entry.ts);
+    const today = entriesOn(entry.ts).filter(e => e.id !== entry.id);
+    if (h < 12 && !today.some(e => hourOf(e.ts) < 12)) out.push({ key: 'early', label: 'Early Bird', sub: 'ate before noon!', icon: 'sun', bg: '#C8C46C' });
+    const since = new Date(entry.ts); since.setDate(since.getDate() - 6); since.setHours(0, 0, 0, 0);
+    const seen = new Set();
+    state.entries.filter(e => e.id !== entry.id && new Date(e.ts) >= since && new Date(e.ts) <= new Date(entry.ts)).forEach(e => groupsOf(e).forEach(g => seen.add(g)));
+    [...groupsOf(entry)].filter(g => GROUP_WORD[g] && !seen.has(g)).forEach(g =>
+      out.push({ key: 'new-' + g, label: 'New: ' + GROUP_WORD[g] + '!', sub: 'first this week', icon: GROUP_ICON[g], bg: '#F3B3D3' }));
+    if (entry.plate) out.push({ key: 'plate', label: 'Plate Artist', sub: 'plate of the week', icon: 'plate', bg: '#EE6A3C' });
+    return out;
+  }
+  function stickerHTML(s, rot) {
+    return '<div class="sticker-badge" style="--bg:' + s.bg + ';--rot:' + rot + 'deg"><svg class="ico"><use href="#i-' + s.icon + '"/></svg>'
+      + '<b>' + esc(s.label) + '</b><span>' + esc(s.sub) + '</span></div>';
+  }
+  function celebrate(entry) {
+    confetti();
+    const st = stickersFor(entry); if (!st.length) return;
+    state.stickers = state.stickers || [];
+    st.forEach(s => state.stickers.push({ key: s.key, label: s.label, sub: s.sub, icon: s.icon, bg: s.bg, ts: entry.ts }));
+    save(); renderStickerBook();
+    const pop = document.createElement('div'); pop.className = 'sticker-pop'; pop.setAttribute('role', 'status');
+    pop.innerHTML = '<p class="pop-title">You earned ' + (st.length > 1 ? st.length + ' stickers' : 'a sticker') + '!</p><div class="pop-row">'
+      + st.map((s, i) => stickerHTML(s, (i % 2 ? 7 : -6))).join('') + '</div><p class="pop-hint">tap to close · saved in your sticker book</p>';
+    document.body.appendChild(pop);
+    const close = () => { pop.classList.add('out'); setTimeout(() => pop.remove(), 300); };
+    pop.addEventListener('click', close); setTimeout(close, 3600);
+  }
+  function renderStickerBook() {
+    const box = $('#sticker-book'); if (!box) return;
+    const all = state.stickers || [];
+    const counts = {}; all.forEach(s => { counts[s.key] = counts[s.key] || Object.assign({ n: 0 }, s); counts[s.key].n++; });
+    const list = Object.values(counts);
+    box.innerHTML = '<h2>⭐ Sticker book</h2>'
+      + (list.length ? '<p class="muted">' + all.length + ' sticker' + (all.length > 1 ? 's' : '') + ' earned. Every one is a moment you took care of yourself.</p><div class="sticker-grid">'
+        + list.map((s, i) => '<div class="sb-item">' + stickerHTML(s, ((i * 37) % 15) - 7) + (s.n > 1 ? '<em class="sb-count">×' + s.n + '</em>' : '') + '</div>').join('') + '</div>'
+        : '<p class="muted">Earn stickers by eating before noon, trying a food group for the first time this week, or building your plate of the week.</p>');
+    sketchify(box);
+  }
+
+  /* ===============================================================
+     PLATE OF THE WEEK: tap or drag foods onto a big plate
+     =============================================================== */
+  let plateItems = [], plateAgain = false, lastAdded = null;
+  const ZONES = [['veg', 0, 108], ['fruit', 108, 180], ['carbs', 180, 288], ['protein', 288, 360]];
+  const ZONE_LABEL = { veg: 'Veggies', fruit: 'Fruit', carbs: 'Carbs', protein: 'Protein', dairy: 'Dairy' };
+  function plateNote() {
+    const have = new Set(); plateItems.forEach(f => f.groups.forEach(g => have.add(g)));
+    if (!plateItems.length) return 'Tap a food (or drag it) to put it on your plate.';
+    const checks = ['protein', 'carbs', 'veg', 'fruit'].filter(g => have.has(g)).map(g => ZONE_LABEL[g].toLowerCase() + ' ✓').join(', ');
+    const want = { protein: 'some protein', veg: 'a veggie', carbs: 'a carb', fruit: 'some fruit' };
+    const miss = ['protein', 'veg', 'carbs', 'fruit'].find(g => !have.has(g));
+    if (!miss) return checks + '. That\'s a beautifully balanced plate! 🌈';
+    return (checks ? checks + ', ' : '') + 'maybe ' + want[miss] + '? Try ' + suggestFrom(miss) + '.';
+  }
+  function plateSVGBig() {
+    const cx = 150, cy = 158, R = 118;
+    const pt = (a, r) => [cx + r * Math.cos((a - 90) * Math.PI / 180), cy + r * Math.sin((a - 90) * Math.PI / 180)];
+    const wedge = (a0, a1) => { const [x0, y0] = pt(a0, R), [x1, y1] = pt(a1, R);
+      return 'M' + cx + ' ' + cy + ' L' + x0.toFixed(1) + ' ' + y0.toFixed(1) + ' A' + R + ' ' + R + ' 0 ' + (a1 - a0 > 180 ? 1 : 0) + ' 1 ' + x1.toFixed(1) + ' ' + y1.toFixed(1) + ' Z'; };
+    const count = (g) => plateItems.filter(f => f.groups.includes(g)).length;
+    let s = '<svg class="big-plate" viewBox="0 0 330 320" role="img" aria-label="Your plate">'
+      + '<circle cx="' + cx + '" cy="' + cy + '" r="' + (R + 18) + '" class="rim"/>';
+    ZONES.forEach(([g, a0, a1]) => {
+      const n = count(g), [lx, ly] = pt((a0 + a1) / 2, R * .55);
+      s += '<g class="zone z-' + g + (n ? ' on' : '') + (lastAdded && lastAdded.includes(g) ? ' wiggle' : '') + '" data-zone="' + g + '">'
+        + '<path d="' + wedge(a0, a1) + '"/>'
+        + '<use href="#i-' + GROUP_ICON[g] + '" x="' + (lx - 18) + '" y="' + (ly - 30) + '" width="36" height="36"/>'
+        + '<text x="' + lx + '" y="' + (ly + 20) + '" text-anchor="middle">' + ZONE_LABEL[g] + (n ? ' ×' + n : '') + '</text></g>';
+    });
+    const nd = count('dairy');
+    s += '<g class="zone z-dairy' + (nd ? ' on' : '') + (lastAdded && lastAdded.includes('dairy') ? ' wiggle' : '') + '" data-zone="dairy">'
+      + '<circle cx="292" cy="44" r="32"/><use href="#i-cheese" x="276" y="24" width="32" height="32"/>'
+      + '<text x="292" y="66" text-anchor="middle">Dairy' + (nd ? ' ×' + nd : '') + '</text></g>';
+    return s + '</svg>';
+  }
+  function renderPlateBuilder() {
+    const box = $('#plate-builder'); if (!box) return;
+    const wk = isoDate(planDays(0)[0]);
+    if (state.plateDone === wk && !plateAgain) {
+      box.innerHTML = '<h2>🍽 Plate of the week</h2><div class="pb-done">' + stickerHTML({ label: 'Plate Artist', sub: 'done this week', icon: 'plate', bg: '#EE6A3C' }, -6)
+        + '<div><p><b>You built this week\'s plate. 💛</b> A new challenge opens on Monday.</p>'
+        + '<button type="button" class="btn ghost inline" id="pb-again">Build another anyway</button></div></div>';
+      sketchify(box); return;
+    }
+    const groupsOrder = ['protein', 'carbs', 'veg', 'fruit', 'dairy', 'fun'];
+    const tray = groupsOrder.map(g => {
+      const foods = state.foods.filter(f => f.groups[0] === g && !/sauce/i.test(f.name));
+      if (!foods.length) return '';
+      return '<div class="tray-row"><span class="tray-lbl">' + esc(GROUPS[g].label) + '</span>' + foods.map(f =>
+        '<button type="button" class="chip" draggable="true" data-pb-food="' + f.id + '">' + esc(f.name) + '</button>').join('') + '</div>';
+    }).join('');
+    box.innerHTML = '<h2>🍽 Plate of the week</h2><p class="muted">Once a week, build one meal on the plate. Tap a food, or drag it onto the plate. Each section fills as you go.</p>'
+      + '<div class="pb-grid"><div class="pb-plate" id="pb-drop">' + plateSVGBig()
+      + '<p class="pb-note" aria-live="polite">' + esc(plateNote()) + '</p>'
+      + (plateItems.length ? '<div class="pb-items">' + plateItems.map((f, i) => '<button type="button" class="pitem" data-pb-remove="' + i + '">' + esc(f.name) + ' ×</button>').join('') + '</div>'
+        + '<div class="pb-actions"><button type="button" class="btn" id="pb-log">Log this plate 💛</button><button type="button" class="btn ghost inline" id="pb-clear">Start over</button></div>' : '')
+      + '</div><div class="pb-tray">' + tray + '</div></div>';
+    sketchify(box);
+    lastAdded = null;
+  }
+  function plateAdd(id) {
+    const f = state.foods.find(x => x.id === id); if (!f) return;
+    plateItems.push({ name: f.name, groups: f.groups.slice(), cal: f.cal || 0 });
+    lastAdded = f.groups.slice(); renderPlateBuilder();
+  }
+  document.addEventListener('click', (ev) => {
+    const f = ev.target.closest('[data-pb-food]'); if (f) { plateAdd(f.dataset.pbFood); return; }
+    const r = ev.target.closest('[data-pb-remove]'); if (r) { plateItems.splice(+r.dataset.pbRemove, 1); renderPlateBuilder(); return; }
+    if (ev.target.closest('#pb-clear')) { plateItems = []; renderPlateBuilder(); return; }
+    if (ev.target.closest('#pb-again')) { plateAgain = true; plateItems = []; renderPlateBuilder(); return; }
+    if (ev.target.closest('#pb-log')) {
+      if (!plateItems.length) return;
+      const cal = plateItems.reduce((n, x) => n + (x.cal || 0), 0);
+      const entry = { id: uid(), ts: new Date().toISOString(), type: 'meal', plate: true, foods: plateItems.map(x => Object.assign({}, x)),
+        cal: state.settings.calories ? (cal || null) : null, note: '🍽 Plate of the week' };
+      state.entries.push(entry); state.plateDone = isoDate(planDays(0)[0]);
+      plateItems = []; plateAgain = false; save(); render(); showCheer(entry);
+    }
+  });
+  document.addEventListener('dragstart', (ev) => { const f = ev.target.closest && ev.target.closest('[data-pb-food]'); if (f) ev.dataTransfer.setData('text/plain', f.dataset.pbFood); });
+  document.addEventListener('dragover', (ev) => { if (ev.target.closest && ev.target.closest('#pb-drop')) { ev.preventDefault(); $('#pb-drop').classList.add('over'); } });
+  document.addEventListener('dragleave', (ev) => { if (ev.target.id === 'pb-drop') ev.target.classList.remove('over'); });
+  document.addEventListener('drop', (ev) => {
+    if (!(ev.target.closest && ev.target.closest('#pb-drop'))) return;
+    ev.preventDefault(); const id = ev.dataTransfer.getData('text/plain'); if (id) plateAdd(id);
+  });
 
   render();
   routeHash();
