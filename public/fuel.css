@@ -1249,3 +1249,6 @@ body.mag[data-theme="draper"] { background-color: #F6EADF; }
 .fav-from { font-size: 1rem; }
 .install-steps { padding-left: 20px; margin: 6px 0; }
 .install-steps li { margin-bottom: 4px; }
+/* light pastel background instead of beige */
+body.mag { background-color: #FBE4EE; }
+body.mag[data-theme="bubblegum"] { --p-bg: #FBE4EE; }
