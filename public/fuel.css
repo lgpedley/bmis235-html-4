@@ -1,29 +1,37 @@
 /* =====================================================================
    Fuel Up · styles
-   Palette: #FFF1B5 Buttermilk · #C1DBE8 Pastel Blue · #43302E Old Burgundy
+   Palette (Fiery): #5F0F40 · #9A031E · #FB8B24 · #E36414 · #0F4C5C
    ===================================================================== */
 :root {
-  --burgundy: #43302E;     /* Old Burgundy */
-  --blue: #C1DBE8;         /* Pastel Blue */
-  --butter: #FFF1B5;       /* Buttermilk */
+  /* Fiery palette */
+  --purple: #5F0F40;
+  --crimson: #9A031E;
+  --orange: #FB8B24;
+  --burnt: #E36414;
+  --teal: #0F4C5C;
 
-  /* lighter / deeper steps of the three brand colors */
-  --butter-light: #FFFBEA;
-  --blue-light: #E3EFF5;
-  --blue-deep: #6F9DB5;
+  /* light tints of the palette for backgrounds */
+  --bg: #FFF5EA;           /* warm cream page */
+  --card: #FFFBF6;         /* cards */
+  --soft: #FFDDB8;         /* light orange: highlight cards, selected chips */
+  --teal-light: #DCEBEE;   /* encouragement card */
 
-  /* old names kept so the rest of the file still works */
-  --brown: var(--burgundy);
-  --rose: var(--blue-deep);
-  --blush: var(--blue);
-  --cream: var(--butter);
-  --sage: var(--blue);
+  /* names used throughout this file */
+  --burgundy: var(--purple);
+  --brown: var(--purple);
+  --blue: var(--soft);
+  --butter: var(--bg);
+  --butter-light: var(--card);
+  --blue-light: var(--teal-light);
+  --blue-deep: var(--teal);
+  --rose: var(--burnt);
+  --blush: var(--soft);
+  --cream: var(--bg);
+  --sage: var(--soft);
 
-  --bg: var(--butter);
-  --card: var(--butter-light);
-  --ink: var(--burgundy);
-  --ink-soft: #6E5754;
-  --line: #E9DB9C;
+  --ink: var(--purple);
+  --ink-soft: #7B4A66;
+  --line: #F2D7BC;
   --radius: 18px;
 }
 
@@ -53,7 +61,7 @@ a { color: var(--brown); font-weight: 700; }
 .brand { display: flex; gap: 12px; align-items: center; max-width: 1100px; margin: 0 auto; }
 .logo { font-size: 2.2rem; }
 .top h1 { font-size: 1.7rem; font-weight: 800; margin: 0; }
-.tagline { margin: 0; color: var(--blue); }
+.tagline { margin: 0; color: var(--orange); }
 .tabs {
   display: flex; gap: 4px; overflow-x: auto;
   max-width: 1100px; margin: 14px auto 0;
@@ -63,7 +71,7 @@ a { color: var(--brown); font-weight: 700; }
   padding: 10px 16px; border-radius: 14px 14px 0 0;
   background: transparent; color: var(--cream); white-space: nowrap;
 }
-.tabs button:hover { background: rgba(255,241,181,.14); }
+.tabs button:hover { background: rgba(255,245,234,.14); }
 .tabs button.on { background: var(--bg); color: var(--brown); }
 
 main { max-width: 1100px; margin: 0 auto; padding: 20px 16px 10px; }
@@ -78,7 +86,7 @@ main { max-width: 1100px; margin: 0 auto; padding: 20px 16px 10px; }
   padding: 20px;
   margin-bottom: 18px;
 }
-.card.hello { background: var(--blue); border-color: #A3C6D8; }
+.card.hello { background: var(--soft); border-color: var(--orange); }
 .card.cheer { background: var(--blue-light); border-color: var(--blue-deep); }
 .grid2 { display: grid; grid-template-columns: 1fr 1fr; gap: 18px; align-items: start; }
 @media (max-width: 800px) { .grid2 { grid-template-columns: 1fr; } }
@@ -98,10 +106,10 @@ input:focus, select:focus, button:focus-visible { outline: 3px solid var(--rose)
 
 .btn {
   font: inherit; font-weight: 800; cursor: pointer;
-  background: var(--brown); color: var(--cream);
+  background: var(--crimson); color: #FFF5EA;
   border: 0; border-radius: 999px; padding: 12px 22px; margin-top: 16px;
 }
-.btn:hover { background: #2E201F; }
+.btn:hover { background: #7A0218; }
 .btn.small { padding: 8px 14px; margin-top: 0; }
 .btn.ghost { background: transparent; color: var(--brown); border: 2px solid var(--burgundy); display: block; margin-top: 10px; }
 .btn.ghost:hover { background: var(--blush); }
@@ -136,7 +144,7 @@ body.no-cal .cal-only { display: none !important; }
 .cheer h2, .hello h2 { font-size: 1.35rem; }
 .fact {
   background: rgba(255,255,255,.55);
-  border-left: 5px solid var(--brown);
+  border-left: 5px solid var(--burnt);
   border-radius: 10px; padding: 10px 14px; margin: 10px 0 0;
 }
 .fact .src { display: block; font-size: .8rem; color: var(--ink-soft); margin-top: 4px; }
@@ -161,7 +169,7 @@ body.no-cal .cal-only { display: none !important; }
   display: inline-block; font-size: .75rem; font-weight: 700; padding: 1px 8px; border-radius: 999px;
   background: var(--burgundy); color: var(--butter); margin-right: 4px;
 }
-.entries .tag.snack { background: var(--blue); color: var(--burgundy); }
+.entries .tag.snack { background: var(--orange); color: var(--purple); }
 .del { font: inherit; border: 0; background: none; cursor: pointer; color: var(--ink-soft); font-size: 1.1rem; padding: 0 4px; }
 .del:hover { color: var(--brown); }
 
@@ -175,7 +183,7 @@ body.no-cal .cal-only { display: none !important; }
 .legend span { display: inline-flex; align-items: center; gap: 6px; }
 .dot { width: 12px; height: 12px; border-radius: 50%; display: inline-block; }
 .dot.meal { background: var(--brown); }
-.dot.snack { background: var(--blue); border: 2px solid var(--burgundy); }
+.dot.snack { background: var(--orange); border: 2px solid var(--purple); }
 
 .tooltip {
   position: fixed; z-index: 10; pointer-events: none;
@@ -225,3 +233,4 @@ footer { max-width: 1100px; margin: 0 auto; padding: 10px 16px 40px; font-size: 
 .amount .amt.half { opacity: .35; }
 .fod { margin: 12px 0 -4px; font-weight: 800; font-size: .8rem; text-transform: uppercase; letter-spacing: .06em; color: var(--ink-soft); }
 .chart.plate .pemo { font-size: 26px; fill: initial; }
+.top { border-bottom: 5px solid var(--burnt); }

@@ -364,7 +364,7 @@
      Charts (inline SVG)
      --------------------------------------------------------------- */
   const SVGNS = 'http://www.w3.org/2000/svg';
-  const C = { meal: '#43302E', snack: '#C1DBE8', grid: '#E9DB9C', band: '#FFF1B5', bar: '#6F9DB5', goal: '#43302E', card: '#FFFBEA', empty: '#FFF7D6' };
+  const C = { meal: '#5F0F40', snack: '#FB8B24', grid: '#F2D7BC', band: '#FFEFDD', bar: '#0F4C5C', goal: '#9A031E', card: '#FFFBF6', empty: '#FFF3E6', plateLo: '#DCEBEE', plateHi: '#8FBAC3' };
 
   // Timeline: rows of days, x = hour of day
   function scheduleSVG(days, rowLabels) {
@@ -431,7 +431,7 @@
     const parts = [['veg', 0, 108], ['fruit', 108, 180], ['carbs', 180, 288], ['protein', 288, 360]];
     let s = '<svg class="chart plate" viewBox="0 0 262 232" role="img" aria-label="Plate showing food groups">';
     s += '<circle cx="' + cx + '" cy="' + cy + '" r="' + (R + 14) + '" fill="#FFFFFF" stroke="' + C.grid + '" stroke-width="2"/>';
-    const fill = (v) => v > 0 ? mix('#E3EFF5', '#86B0C5', Math.min(1, v)) : C.empty;
+    const fill = (v) => v > 0 ? mix(C.plateLo, C.plateHi, Math.min(1, v)) : C.empty;
     const node = (g, x, y, shape) => {
       const v = levels[g] || 0, G = GROUPS[g], on = v > 0;
       const tip = G.label + (labels && labels[g] ? ': ' + labels[g] : on ? ': yes!' : ': not yet');
