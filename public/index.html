@@ -46,7 +46,8 @@
   <symbol id="i-calendar" viewBox="0 0 32 32"><g filter="url(#sketch)" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round" stroke-linecap="round"><rect x="4" y="7" width="24" height="21" rx="2" fill="#FCF4D2"/><path d="M4 9a2 2 0 0 1 2-2h20a2 2 0 0 1 2 2v4H4z" fill="#A00721"/><path d="M10 4v6M22 4v6" fill="none"/><g fill="currentColor" stroke="none"><circle cx="10" cy="18" r="1.2"/><circle cx="16" cy="18" r="1.2"/><circle cx="22" cy="18" r="1.2"/><circle cx="10" cy="23" r="1.2"/><circle cx="16" cy="23" r="1.2"/></g></g></symbol>
   <symbol id="i-cart" viewBox="0 0 32 32"><g filter="url(#sketch)" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round" stroke-linecap="round"><path d="M2 5h4l3 15h16l3-11H8" fill="none"/><path d="M9 9h19l-3 11H11z" fill="#EDB2D4"/><circle cx="12" cy="25.5" r="2" fill="#FCF4D2"/><circle cx="23" cy="25.5" r="2" fill="#FCF4D2"/><path d="M15 12v5M19 12v5M23 12v5" fill="none" stroke-width="1.2"/></g></symbol>
   <symbol id="i-search" viewBox="0 0 32 32"><g filter="url(#sketch)" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="13" cy="13" r="8" fill="#CEE6EF"/><path d="M19 19l8 8" fill="none" stroke-width="3"/><path d="M9.5 11a4 4 0 0 1 3.5-2.5" fill="none" stroke="#FCF4D2" stroke-width="1.6"/></g></symbol>
-  <symbol id="i-pan" viewBox="0 0 32 32"><g filter="url(#sketch)" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round" stroke-linecap="round"><circle cx="13" cy="17" r="10" fill="#50050E"/><path d="M22 23l8 6" fill="none" stroke-width="3"/><ellipse cx="12" cy="16" rx="6" ry="5" fill="#FCF4D2" stroke-width="1.2"/><circle cx="12.5" cy="16.5" r="2.5" fill="#F4D06F" stroke-width="1.2"/></g></symbol>
+  <symbol id="i-pan" viewBox="0 0 32 32"><g filter="url(#sketch)" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round" stroke-linecap="round"><path d="M2 16h21c0 6-4.5 9-10.5 9S2 22 2 16z" fill="#A00721"/><path d="M23 17.5h7" fill="none" stroke-width="3"/><path d="M8 11c-1-2 1-3 0-5M13 11c-1-2 1-3 0-5M18 11c-1-2 1-3 0-5" fill="none" stroke-width="1.4"/></g></symbol>
+  <symbol id="i-shaker" viewBox="0 0 32 32"><g filter="url(#sketch)" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round" stroke-linecap="round"><path d="M10 13c0-4 2.5-7 6-7s6 3 6 7v14H10z" fill="#FCF4D2"/><path d="M10 13h12" fill="none"/><path d="M11 19h10v8H11z" fill="#EDB2D4" stroke-width="1.2"/><g fill="currentColor" stroke="none"><circle cx="14" cy="9.5" r=".9"/><circle cx="18" cy="9.5" r=".9"/><circle cx="16" cy="7.5" r=".9"/></g></g></symbol>
 </svg>
 
 <header class="top">
@@ -192,7 +193,7 @@
   <section id="tab-ideas" class="panel">
     <div class="card brown pantry">
       <h2>🍳 What can I make?</h2>
-      <p class="muted">Add the ingredients you have and I'll find meals you can make right now, plus ones you're only an ingredient or two away from. I assume you have salt, pepper and oil.</p>
+      <p class="muted">Add the ingredients you have and I'll find meals you can make right now, plus ones you're only an ingredient or two away from. I assume you have salt, pepper and oil, and your <b>cooking extras</b> from the My foods tab count too.</p>
       <form id="pantry-form" class="row">
         <input type="text" id="pantry-input" maxlength="80" placeholder="e.g. eggs, bread, cheese (commas are fine)" aria-label="Ingredient">
         <button type="submit" class="btn small">+ Add</button>
@@ -268,6 +269,17 @@
           <p class="muted">Your data is saved only in this browser on this device.</p>
         </div>
       </div>
+    </div>
+
+    <div class="card brown extras-card">
+      <h2>🧂 My cooking extras</h2>
+      <p class="muted">Spices, seasonings, cooking veggies, sauces and other things you cook <i>with</i> (not foods you'd eat on their own). They count as ingredients you have in <b>What can I make?</b>, and I'll suggest which ones to season each dish with. Tap 🛒 when you're running low.</p>
+      <form id="extra-form" class="row">
+        <input type="text" id="extra-input" maxlength="60" placeholder="e.g. paprika, onion, hot sauce (commas are fine)" aria-label="Extra ingredient">
+        <select id="extra-cat" aria-label="Category"></select>
+        <button type="submit" class="btn small">+ Add</button>
+      </form>
+      <div class="extras-grid" id="extras-grid"></div>
     </div>
   </section>
 

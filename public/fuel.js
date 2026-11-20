@@ -204,7 +204,7 @@
      --------------------------------------------------------------- */
   const ICONS = { '🍽': 'plate', '🍞': 'bread', '🐟': 'fish', '🥦': 'broccoli', '🍓': 'strawberry', '🧀': 'cheese', '🌶': 'chili',
     '💛': 'heart', '📊': 'chart', '💡': 'bulb', '🌈': 'rainbow', '💪': 'dumbbell', '🥔': 'potato', '🌽': 'corn', '🔥': 'fire',
-    '🔋': 'battery', '✨': 'sparkle', '🎉': 'sparkle', '☀': 'sun', '🌱': 'sprout', '⏱': 'timer', '📅': 'calendar', '🛒': 'cart', '🔍': 'search', '🍳': 'pan' };
+    '🔋': 'battery', '✨': 'sparkle', '🎉': 'sparkle', '☀': 'sun', '🌱': 'sprout', '⏱': 'timer', '📅': 'calendar', '🛒': 'cart', '🔍': 'search', '🍳': 'pan', '🧂': 'shaker' };
   const ICON_RE = new RegExp('(' + Object.keys(ICONS).join('|') + ')\uFE0F?', 'gu');
   const ICON_TEST = new RegExp('(' + Object.keys(ICONS).join('|') + ')', 'u');  // no "g" flag, so repeated .test() calls are reliable
   const GROUP_ICON = { carbs: 'bread', protein: 'fish', veg: 'broccoli', fruit: 'strawberry', dairy: 'cheese', fun: 'chili' };
@@ -561,7 +561,7 @@
   function render() {
     document.body.classList.toggle('no-cal', !state.settings.calories);
     $('#cal-toggle').checked = state.settings.calories;
-    renderToday(); renderWeek(); renderRecipe(); renderLearn(); renderFoods(); renderPlan(); renderPlannedToday(); renderIdeas(); renderPantry();
+    renderToday(); renderWeek(); renderRecipe(); renderLearn(); renderFoods(); renderPlan(); renderPlannedToday(); renderIdeas(); renderPantry(); renderExtras();
     sketchify(document.body);
   }
 
@@ -1260,8 +1260,82 @@
   ];
   const PANTRY_STAPLES = ['Eggs', 'Bread', 'Butter', 'Cheese', 'Milk', 'Garlic', 'Pasta', 'Tortillas'];
 
+  /* ---- cooking extras (spices, aromatics, sauces, other) ---- */
+  const EXTRA_CATS = {
+    spice: { label: 'Spices & seasonings', icon: 'sparkle',
+      quick: ['Garlic powder', 'Onion powder', 'Paprika', 'Italian seasoning', 'Chili flakes', 'Cajun seasoning', 'Lemon pepper', 'Cinnamon', 'Everything bagel seasoning', 'Taco seasoning', 'Oregano', 'Parsley'] },
+    veg: { label: 'Cooking veggies & aromatics', icon: 'broccoli',
+      quick: ['Garlic', 'Onion', 'Bell pepper', 'Mushrooms', 'Spinach', 'Tomatoes', 'Lemon', 'Lime', 'Green onion', 'Jalapeño'] },
+    sauce: { label: 'Sauces & condiments', icon: 'chili',
+      quick: ['Ketchup', 'Mustard', 'Mayo', 'Ranch', 'Hot sauce', 'BBQ sauce', 'Marinara', 'Pizza sauce', 'Honey', 'Pesto'] },
+    other: { label: 'Other ingredients', icon: 'pan',
+      quick: ['Butter', 'Olive oil', 'Parmesan', 'Breadcrumbs', 'Flour', 'Broth', 'Heavy cream', 'Sour cream', 'Brown sugar'] }
+  };
+  // which extras go well with which dishes: [extra keyword, dish keywords]
+  const SEASON_PAIRS = [
+    ['garlic', ['pasta', 'noodle', 'alfredo', 'rosatella', 'mac', 'potato', 'salmon', 'shrimp', 'steak', 'broccoli', 'toast', 'pizza', 'bread']],
+    ['onion powder', ['burger', 'potato', 'steak', 'chowder', 'mac', 'egg']], ['onion', ['burger', 'steak', 'potato', 'chowder', 'hash', 'quesadilla']],
+    ['paprika', ['potato', 'egg', 'salmon', 'shrimp', 'mac', 'hash', 'fries']], ['italian', ['pasta', 'pizza', 'bread', 'toast', 'alfredo', 'rosatella']],
+    ['oregano', ['pizza', 'pasta', 'rosatella']], ['parsley', ['pasta', 'potato', 'salmon', 'shrimp', 'alfredo']],
+    ['chili flake', ['pasta', 'pizza', 'rosatella', 'shrimp', 'egg']], ['cajun', ['salmon', 'shrimp', 'potato', 'fries', 'steak', 'corn']],
+    ['lemon pepper', ['salmon', 'shrimp', 'broccoli', 'potato']], ['lemon', ['salmon', 'shrimp', 'broccoli', 'alfredo']],
+    ['lime', ['taco', 'quesadilla', 'corn', 'salmon']], ['cinnamon', ['toast', 'smoothie', 'apple', 'banana', 'peanut butter']],
+    ['everything bagel', ['egg', 'toast', 'potato']], ['taco', ['quesadilla', 'taco', 'burger', 'beef']],
+    ['hot sauce', ['egg', 'quesadilla', 'mac', 'taco', 'potato', 'hash']], ['ranch', ['potato', 'fries', 'broccoli', 'pizza']],
+    ['bbq', ['burger', 'steak', 'potato', 'salmon']], ['honey', ['toast', 'salmon', 'smoothie', 'peanut butter', 'corn']],
+    ['mushroom', ['steak', 'burger', 'pizza', 'alfredo', 'egg']], ['bell pepper', ['quesadilla', 'pizza', 'hash', 'egg', 'steak']],
+    ['spinach', ['alfredo', 'rosatella', 'pasta', 'egg', 'quesadilla']], ['parmesan', ['pasta', 'noodle', 'broccoli', 'corn', 'alfredo', 'potato']],
+    ['pickle', ['burger', 'grilled cheese', 'tuna']], ['mustard', ['burger', 'tuna', 'potato']], ['pesto', ['pasta', 'noodle', 'pizza', 'toast']]
+  ];
+  function seasonFor(dishName) {
+    const d = dishName.toLowerCase();
+    return (state.extras || []).filter(x => SEASON_PAIRS.some(([k, dishes]) => x.name.toLowerCase().includes(k) && dishes.some(w => d.includes(w))))
+      .map(x => x.name).slice(0, 3);
+  }
+  function renderExtras() {
+    const ex = state.extras || [];
+    const have = ex.map(x => x.name.toLowerCase());
+    $('#extras-grid').innerHTML = Object.keys(EXTRA_CATS).map(c => {
+      const C = EXTRA_CATS[c], mine = ex.map((x, i) => ({ x, i })).filter(o => o.x.cat === c);
+      const quick = C.quick.filter(n => !have.includes(n.toLowerCase()));
+      return '<div class="extra-col"><h3>' + ico(C.icon) + ' ' + esc(C.label) + ' <span class="count">' + mine.length + '</span></h3>'
+        + '<div class="chips">' + (mine.length ? mine.map(({ x, i }) => '<span class="chip on">' + esc(x.name)
+            + '<button class="x low" data-extra-low="' + i + '" title="Running low: add to shopping list" aria-label="Add ' + esc(x.name) + ' to shopping list">🛒</button>'
+            + '<button class="x" data-extra-del="' + i + '" aria-label="Remove ' + esc(x.name) + '">×</button></span>').join('')
+          : '<span class="muted">Nothing yet</span>') + '</div>'
+        + (quick.length ? '<div class="chips quick">' + quick.map(n => '<button type="button" class="chip" data-extra-quick="' + esc(n) + '|' + c + '">+ ' + esc(n) + '</button>').join('') + '</div>' : '')
+        + '</div>';
+    }).join('');
+  }
+  function guessExtraCat(name) {
+    const n = name.toLowerCase();
+    for (const c of Object.keys(EXTRA_CATS)) if (EXTRA_CATS[c].quick.some(q => q.toLowerCase() === n)) return c;
+    if (/powder|seasoning|spice|salt|pepper$|paprika|cumin|oregano|basil|thyme|rosemary|cinnamon|nutmeg|flake|dill|curry|chili powder|ginger|saffron|turmeric|sage|herbes|allspice|clove|bay leaf|seed/.test(n)) return 'spice';
+    if (/sauce|ketchup|mustard|mayo|ranch|dressing|honey|syrup|salsa|pesto|vinegar|jam/.test(n)) return 'sauce';
+    if (/onion|garlic|pepper|mushroom|spinach|tomato|lemon|lime|celery|carrot|herb|cilantro|jalape|kale|zucchini/.test(n)) return 'veg';
+    return null;
+  }
+  function addExtras(text, cat) {
+    state.extras = state.extras || [];
+    text.split(/[,\n]/).map(t => t.trim()).filter(Boolean).forEach(n => {
+      n = n.charAt(0).toUpperCase() + n.slice(1);
+      if (!state.extras.some(x => x.name.toLowerCase() === n.toLowerCase())) state.extras.push({ name: n, cat: cat || guessExtraCat(n) || 'other' });
+    });
+    save(); renderExtras(); renderPantry(); sketchify($('#tab-foods')); sketchify($('#tab-ideas'));
+  }
+  $('#extra-cat').innerHTML = '<option value="">Auto-pick category</option>' + Object.keys(EXTRA_CATS).map(c => '<option value="' + c + '">' + EXTRA_CATS[c].label + '</option>').join('');
+  $('#extra-form').addEventListener('submit', (ev) => { ev.preventDefault(); const i = $('#extra-input'); addExtras(i.value, $('#extra-cat').value); i.value = ''; i.focus(); });
+  document.addEventListener('click', (ev) => {
+    const q = ev.target.closest('[data-extra-quick]'); if (q) { const [n, c] = q.dataset.extraQuick.split('|'); addExtras(n, c); return; }
+    const d = ev.target.closest('[data-extra-del]');
+    if (d) { state.extras.splice(+d.dataset.extraDel, 1); save(); renderExtras(); renderPantry(); sketchify($('#tab-foods')); sketchify($('#tab-ideas')); return; }
+    const lo = ev.target.closest('[data-extra-low]');
+    if (lo) { const x = state.extras[+lo.dataset.extraLow]; const n = addToShopping([x.name]); renderPlan(); sketchify($('#tab-plan'));
+      lo.textContent = '✓'; lo.title = n ? 'Added to this week\'s shopping list' : 'Already on your list'; setTimeout(() => { lo.textContent = '🛒'; sketchify(lo.parentNode); }, 1500); }
+  });
+
   function pantryHas(words) {
-    const p = (state.pantry || []).map(x => x.toLowerCase());
+    const p = (state.pantry || []).concat((state.extras || []).map(x => x.name)).map(x => x.toLowerCase());
     return words.some(w => p.some(x => x.includes(w) || (x.length > 3 && w.includes(x))));
   }
   function renderPantry() {
@@ -1289,6 +1363,7 @@
         + '<div class="meta">' + r.d.groups.map(g => '<span class="pill">' + ico(GROUP_ICON[g]) + ' ' + esc(GROUPS[g].label) + '</span>').join('') + '</div>'
         + '<p>' + esc(r.d.steps) + '</p>'
         + (r.extras.length ? '<p class="muted">✓ You also have ' + esc(r.extras.join(', ')) + ' to add.</p>' : '')
+        + (seasonFor(r.d.name + ' ' + r.d.steps).length ? '<p class="season">🧂 Season with your: <b>' + esc(seasonFor(r.d.name + ' ' + r.d.steps).join(', ')) + '</b></p>' : '')
         + (add.length ? '<p class="need">Missing: <b>' + esc(add.join(', ')) + '</b></p><div class="idea-actions"><button class="btn small" data-pantry-shop="' + esc(add.join('|')) + '">🛒 Add missing to list</button></div>' : '')
         + '</div>';
     };
