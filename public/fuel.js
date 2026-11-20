@@ -496,7 +496,7 @@
     let s = '<svg class="chart" viewBox="0 0 ' + W + ' ' + H + '" role="img" aria-label="Food groups this week">';
     keys.forEach((k, i) => {
       const g = GROUPS[k], y = top + rowH * i + (rowH - barH) / 2, v = counts[k];
-      s += '<use href="#i-' + GROUP_ICON[k] + '" x="0" y="' + (y - 3) + '" width="24" height="24" style="color:#6E1F2E"/>';
+      s += '<use href="#i-' + GROUP_ICON[k] + '" x="0" y="' + (y - 3) + '" width="24" height="24" style="color:var(--p-ink)"/>';
       s += '<text class="lab" x="30" y="' + (y + barH - 4) + '">' + esc(g.label) + '</text>';
       s += '<rect x="' + left + '" y="' + y + '" width="' + (W - left - right) + '" height="' + barH + '" fill="' + C.card + '" rx="4"/>';
       if (v > 0) s += '<rect x="' + left + '" y="' + y + '" width="' + Math.max(4, x(v) - left) + '" height="' + barH + '" fill="' + C.bar + '" rx="4"/>';
@@ -523,12 +523,12 @@
     const parts = [['veg', 0, 108], ['fruit', 108, 180], ['carbs', 180, 288], ['protein', 288, 360]];
     let s = '<svg class="chart plate" viewBox="0 0 262 232" role="img" aria-label="Plate showing food groups">';
     s += '<circle cx="' + cx + '" cy="' + cy + '" r="' + (R + 14) + '" fill="#FFF9E6" stroke="' + C.grid + '" stroke-width="2"/>';
-    const fill = (v) => v >= 1 ? '#BFD7EA' : v > 0 ? '#EDB9C4' : C.empty;   // exact palette colors only
+    const fill = (v) => v >= 1 ? C.plateHi : v > 0 ? C.plateLo : C.empty;   // theme: part way / goal reached
     const node = (g, x, y, shape) => {
       const v = levels[g] || 0, G = GROUPS[g], on = v > 0;
       const tip = G.label + (labels && labels[g] ? ': ' + labels[g] : on ? ': yes!' : ': not yet');
       return '<g class="hit" data-tip="' + esc(tip) + '">' + shape(fill(v), on)
-        + '<use href="#i-' + GROUP_ICON[g] + '" x="' + (x - 14) + '" y="' + (y - 22) + '" width="28" height="28" opacity="1" style="color:#6E1F2E"/>'
+        + '<use href="#i-' + GROUP_ICON[g] + '" x="' + (x - 14) + '" y="' + (y - 22) + '" width="28" height="28" opacity="1" style="color:var(--p-ink)"/>'
         + '<text class="plab" x="' + x + '" y="' + (y + 22) + '" text-anchor="middle">' + esc(labels && labels[g] ? labels[g] : G.label.split(' ')[0]) + '</text></g>';
     };
     parts.forEach(([g, a0, a1]) => {
@@ -558,7 +558,17 @@
   let selected = new Set();   // food ids picked in the log form
   let extras = [];            // "something not on my list" foods
 
+  const THEME_LABELS = {"sage": "Sage Cottage", "strawberry": "Strawberry Milk", "butterblue": "Butter & Blue", "mocha": "Mocha Latte"};
+  function applyTheme() {
+    const t = (state.settings && state.settings.theme) || 'sage';
+    document.body.dataset.theme = t;
+    document.querySelectorAll('[data-theme-pick]').forEach(b => b.classList.toggle('on', b.dataset.themePick === t));
+    const cs = getComputedStyle(document.body), v = (n) => cs.getPropertyValue(n).trim();
+    Object.assign(C, { meal: v('--p-accent'), snack: v('--p-plate-part'), grid: v('--p-line'), band: v('--p-a4'), bar: v('--p-accent'),
+      goal: v('--p-dark'), card: v('--p-card'), empty: v('--p-card'), plateLo: v('--p-plate-part'), plateHi: v('--p-plate') });
+  }
   function render() {
+    applyTheme();
     document.body.classList.toggle('no-cal', !state.settings.calories);
     $('#cal-toggle').checked = state.settings.calories;
     renderToday(); renderWeek(); renderRecipe(); renderLearn(); renderFoods(); renderPlan(); renderPlannedToday(); renderIdeas(); renderPantry(); renderExtras();
@@ -1517,6 +1527,11 @@
     }
   });
   document.addEventListener('keydown', (ev) => { if (ev.key === 'Enter' && ev.target.matches('.steps li')) ev.target.classList.toggle('done'); });
+
+  document.addEventListener('click', (ev) => {
+    const tp = ev.target.closest('[data-theme-pick]'); if (!tp) return;
+    state.settings.theme = tp.dataset.themePick; save(); render();
+  });
 
   render();
   routeHash();
