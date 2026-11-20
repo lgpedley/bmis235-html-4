@@ -1,0 +1,177 @@
+<!DOCTYPE html>
+<!--
+  Fuel Up: a judgment-free food tracker
+  Author: Grace Pedley · BMIS 235
+  All data is saved in this browser only (localStorage). Nothing is sent anywhere.
+-->
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Fuel Up</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="fuel.css">
+</head>
+<body>
+
+<header class="top">
+  <div class="brand">
+    <span class="logo" aria-hidden="true">🍽️</span>
+    <div>
+      <h1>Fuel Up</h1>
+      <p class="tagline">Every bite counts. No judgment, ever.</p>
+    </div>
+  </div>
+  <nav class="tabs" role="tablist" aria-label="Sections">
+    <button role="tab" data-tab="today" class="on">Today</button>
+    <button role="tab" data-tab="week">My week</button>
+    <button role="tab" data-tab="recipe">Recipe</button>
+    <button role="tab" data-tab="learn">Food groups</button>
+    <button role="tab" data-tab="foods">My foods</button>
+  </nav>
+</header>
+
+<main>
+
+  <!-- ================= TODAY ================= -->
+  <section id="tab-today" class="panel on">
+
+    <div class="card hello" id="daily-note"></div>
+
+    <div class="grid2">
+      <div class="card">
+        <h2>Log something you ate</h2>
+        <form id="log-form">
+          <div class="seg" role="group" aria-label="Meal or snack">
+            <button type="button" data-type="meal" class="on">Meal</button>
+            <button type="button" data-type="snack">Snack</button>
+          </div>
+
+          <label class="lbl" for="log-time">When</label>
+          <input type="datetime-local" id="log-time" required>
+
+          <p class="lbl">What did you have? <span class="muted">(tap all that apply)</span></p>
+          <div class="chips" id="pick-foods"></div>
+
+          <details class="other">
+            <summary>+ Something not on my list</summary>
+            <div class="row">
+              <input type="text" id="other-name" placeholder="e.g. apple slices">
+              <select id="other-group" aria-label="Food group"></select>
+              <input type="number" id="other-cal" class="cal-only" placeholder="cal" min="0" aria-label="Calories">
+              <button type="button" class="btn small" id="other-add">Add</button>
+            </div>
+          </details>
+
+          <div class="cal-only">
+            <label class="lbl" for="log-cal">Calories <span class="muted">(estimate, change it if you like)</span></label>
+            <input type="number" id="log-cal" min="0" placeholder="0">
+          </div>
+
+          <label class="lbl" for="log-note">Note <span class="muted">(optional, how you felt, where you were…)</span></label>
+          <input type="text" id="log-note" maxlength="140">
+
+          <button type="submit" class="btn">Log it 💛</button>
+        </form>
+      </div>
+
+      <div>
+        <div class="card cheer" id="cheer" hidden aria-live="polite"></div>
+        <div class="card">
+          <h2>Today so far</h2>
+          <div class="stats" id="today-stats"></div>
+          <h3 class="sub">Today's timeline</h3>
+          <div id="today-timeline"></div>
+          <ul class="entries" id="today-list"></ul>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ================= WEEK ================= -->
+  <section id="tab-week" class="panel">
+    <div class="card hello" id="week-note"></div>
+    <div class="card">
+      <h2>When I ate this week</h2>
+      <p class="muted">Each dot is a time you fed yourself. The goal is a steadier rhythm, not perfection.</p>
+      <div class="legend"><span><i class="dot meal"></i>Meal</span><span><i class="dot snack"></i>Snack</span></div>
+      <div id="week-schedule"></div>
+    </div>
+    <div class="card">
+      <h2>Food groups this week</h2>
+      <p class="muted">How many times each group showed up in the last 7 days, next to a gentle weekly goal.</p>
+      <div id="week-groups"></div>
+      <div id="week-try"></div>
+    </div>
+    <div class="card">
+      <h2>History</h2>
+      <div id="history"></div>
+    </div>
+  </section>
+
+  <!-- ================= RECIPE ================= -->
+  <section id="tab-recipe" class="panel">
+    <div class="card recipe" id="recipe"></div>
+  </section>
+
+  <!-- ================= LEARN ================= -->
+  <section id="tab-learn" class="panel">
+    <div class="card hello">
+      <h2>Why each food group matters</h2>
+      <p>No food is "bad." Each group does a different job. Here's what each one does for you, and easy ways to add it using foods you already like.</p>
+    </div>
+    <div class="groups-grid" id="learn-grid"></div>
+  </section>
+
+  <!-- ================= FOODS ================= -->
+  <section id="tab-foods" class="panel">
+    <div class="grid2">
+      <div class="card">
+        <h2>Foods I'll eat</h2>
+        <p class="muted">These show up when you log and decide your weekly recipe.</p>
+        <ul class="food-list" id="food-list"></ul>
+      </div>
+      <div>
+        <div class="card">
+          <h2>Add a food</h2>
+          <form id="food-form">
+            <label class="lbl" for="food-name">Name</label>
+            <input type="text" id="food-name" required maxlength="40" placeholder="e.g. strawberries">
+            <label class="lbl" for="food-group">Food group</label>
+            <select id="food-group"></select>
+            <div class="cal-only">
+              <label class="lbl" for="food-cal">Calories per serving <span class="muted">(rough guess is fine)</span></label>
+              <input type="number" id="food-cal" min="0" placeholder="optional">
+            </div>
+            <button type="submit" class="btn">Add food</button>
+          </form>
+        </div>
+        <div class="card">
+          <h2>Settings</h2>
+          <label class="switch">
+            <input type="checkbox" id="cal-toggle">
+            <span>Track calories</span>
+          </label>
+          <p class="muted">Turn this off any time. Calories will be hidden everywhere.</p>
+          <hr>
+          <button type="button" class="btn ghost" id="reset-foods">Reset food list to defaults</button>
+          <button type="button" class="btn ghost" id="clear-all">Erase all my logs</button>
+          <p class="muted">Your data is saved only in this browser on this device.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+</main>
+
+<footer>
+  <p>Fuel Up shares general nutrition info, not medical advice. If eating ever feels out of control or distressing, you deserve support: the ANAD helpline is free at 1-888-375-7767 (US).</p>
+</footer>
+
+<div class="tooltip" id="tooltip" role="tooltip" hidden></div>
+
+<script src="fuel.js"></script>
+</body>
+</html>
