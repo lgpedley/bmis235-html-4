@@ -44,6 +44,7 @@
   <symbol id="i-sprout" viewBox="0 0 32 32"><g filter="url(#sketch)" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round" stroke-linecap="round"><path d="M16 29V15" fill="none"/><path d="M16 18C15 12 10 10 5 11c0 5 4 8 11 7z" fill="#A6A64A"/><path d="M16 15c1-5 5-8 11-7 0 5-4 8-11 7z" fill="#87872D"/></g></symbol>
   <symbol id="i-timer" viewBox="0 0 32 32"><g filter="url(#sketch)" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><circle cx="16" cy="18" r="10" fill="#FCF4D2"/><path d="M16 18v-6M16 18l4 3M13 4h6M16 4v4" fill="none"/></g></symbol>
   <symbol id="i-calendar" viewBox="0 0 32 32"><g filter="url(#sketch)" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round" stroke-linecap="round"><rect x="4" y="7" width="24" height="21" rx="2" fill="#FCF4D2"/><path d="M4 9a2 2 0 0 1 2-2h20a2 2 0 0 1 2 2v4H4z" fill="#A00721"/><path d="M10 4v6M22 4v6" fill="none"/><g fill="currentColor" stroke="none"><circle cx="10" cy="18" r="1.2"/><circle cx="16" cy="18" r="1.2"/><circle cx="22" cy="18" r="1.2"/><circle cx="10" cy="23" r="1.2"/><circle cx="16" cy="23" r="1.2"/></g></g></symbol>
+  <symbol id="i-cart" viewBox="0 0 32 32"><g filter="url(#sketch)" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round" stroke-linecap="round"><path d="M2 5h4l3 15h16l3-11H8" fill="none"/><path d="M9 9h19l-3 11H11z" fill="#EDB2D4"/><circle cx="12" cy="25.5" r="2" fill="#FCF4D2"/><circle cx="23" cy="25.5" r="2" fill="#FCF4D2"/><path d="M15 12v5M19 12v5M23 12v5" fill="none" stroke-width="1.2"/></g></symbol>
 </svg>
 
 <header class="top">
@@ -61,6 +62,7 @@
   <nav class="tabs" role="tablist" aria-label="Sections">
     <button role="tab" data-tab="today" class="on">Today</button>
     <button role="tab" data-tab="week">My week</button>
+    <button role="tab" data-tab="plan">Plan</button>
     <button role="tab" data-tab="recipe">Recipe</button>
     <button role="tab" data-tab="learn">Food groups</button>
     <button role="tab" data-tab="foods">My foods</button>
@@ -113,6 +115,7 @@
 
       <div>
         <div class="card cheer" id="cheer" hidden aria-live="polite"></div>
+        <div class="card planned" id="planned-today" hidden></div>
         <div class="card">
           <h2>Today so far</h2>
           <div class="stats" id="today-stats"></div>
@@ -147,6 +150,26 @@
     <div class="card brown">
       <h2>History</h2>
       <div id="history"></div>
+    </div>
+  </section>
+
+  <!-- ================= PLAN ================= -->
+  <section id="tab-plan" class="panel">
+    <div class="card hello" id="plan-summary"></div>
+    <div class="plan-controls">
+      <div class="seg" id="plan-week" role="group" aria-label="Which week">
+        <button type="button" data-week="0" class="on">This week</button>
+        <button type="button" data-week="1">Next week</button>
+      </div>
+      <button type="button" class="btn" id="plan-fill">✨ Fill my week for me</button>
+      <button type="button" class="btn ghost inline" id="plan-clear">Clear this week</button>
+    </div>
+    <p class="muted">Auto-fill only adds to empty slots, using foods you like and this week's recipes. Swap anything with × and + Add.</p>
+    <div id="plan-grid" class="plan-grid"></div>
+    <div class="card brown">
+      <h2>🛒 Shopping list</h2>
+      <p class="muted">Built from this week's plan. Check things off as you shop.</p>
+      <div id="grocery"></div>
     </div>
   </section>
 
@@ -216,6 +239,18 @@
 </footer>
 
 <div class="tooltip" id="tooltip" role="tooltip" hidden></div>
+
+<dialog id="picker" class="picker">
+  <h2 id="picker-title">Add to plan</h2>
+  <p class="lbl">Foods you like</p>
+  <div class="chips" id="picker-foods"></div>
+  <p class="lbl">Or a whole recipe</p>
+  <div class="chips" id="picker-recipes"></div>
+  <div class="picker-actions">
+    <button type="button" class="btn" id="picker-add">Add to plan</button>
+    <button type="button" class="btn ghost inline" id="picker-cancel">Cancel</button>
+  </div>
+</dialog>
 
 <script src="fuel.js"></script>
 </body>

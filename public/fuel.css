@@ -281,3 +281,51 @@ h2 .ico { width: 1.35em; height: 1.35em; }
 .addlist .ic .ico { width: 34px; height: 34px; }
 .amount .icons .ico { width: 26px; height: 26px; margin-right: 2px; }
 .fact > .ico:first-child { margin-right: 4px; }
+
+/* ---------- meal planning ---------- */
+.plan-controls { display: flex; flex-wrap: wrap; gap: 12px; align-items: center; margin-bottom: 6px; }
+.plan-controls .btn { margin-top: 0; }
+.btn.ghost.inline { display: inline-block; margin-top: 0; }
+.plan-grid { display: grid; grid-template-columns: 1fr; gap: 14px; margin: 12px 0 18px; }
+.plan-day { background: var(--card); border: 2px solid var(--line); border-radius: var(--radius); padding: 14px 16px; }
+.plan-day.today { border-color: var(--cherry); box-shadow: 0 0 0 3px rgba(160,7,33,.12); }
+.plan-head { display: flex; flex-wrap: wrap; justify-content: space-between; align-items: center; gap: 8px; margin-bottom: 8px; }
+.plan-head h3 { margin: 0; font-size: 1.1rem; }
+.badge { background: var(--cherry); color: var(--buttercup); font-size: .75rem; padding: 2px 10px; border-radius: 999px; vertical-align: 2px; }
+.groups-row { display: flex; gap: 4px; }
+.gdot { opacity: .28; filter: grayscale(1); }
+.gdot.on { opacity: 1; filter: none; }
+.gdot .ico { width: 26px; height: 26px; }
+.slots { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; }
+@media (max-width: 860px) { .slots { grid-template-columns: repeat(2, 1fr); } }
+@media (max-width: 460px) { .slots { grid-template-columns: 1fr; } }
+.slot { background: var(--icy); border-radius: 14px; padding: 10px; display: flex; flex-direction: column; gap: 6px; min-height: 96px; }
+.slot-name { font-weight: 800; font-size: .9rem; }
+.slot-items { display: flex; flex-wrap: wrap; gap: 4px; flex: 1; align-content: flex-start; }
+.pitem { display: inline-flex; align-items: center; gap: 2px; background: #fff; border: 1.5px solid var(--line); border-radius: 999px; padding: 2px 4px 2px 10px; font-size: .85rem; }
+.pitem.recipe { background: var(--warmpink); border-color: #D98FB8; font-weight: 700; }
+.pitem .x { font: inherit; border: 0; background: none; cursor: pointer; color: var(--ink-soft); padding: 0 4px; }
+.slot .add { font: inherit; font-size: .85rem; font-weight: 700; cursor: pointer; align-self: flex-start;
+  background: transparent; color: var(--garnet); border: 1.5px dashed var(--garnet); border-radius: 999px; padding: 3px 12px; }
+.slot .add:hover { background: rgba(255,255,255,.6); }
+.done { font-size: .8rem; font-weight: 800; color: var(--olive); white-space: nowrap; }
+.card.brown .done { color: #D2D29A; }
+
+.grocery { list-style: none; padding: 0; margin: 0; columns: 2 220px; }
+.grocery li { break-inside: avoid; padding: 4px 0; }
+.grocery label { display: flex; gap: 8px; align-items: flex-start; cursor: pointer; }
+.grocery input { width: 18px; height: 18px; margin-top: 3px; accent-color: var(--warmpink); }
+.grocery input:checked + span { text-decoration: line-through; opacity: .6; }
+
+.card.planned .entries li { align-items: center; }
+.card.planned .time { min-width: 120px; }
+.card.planned .btn.small { padding: 6px 14px; }
+
+dialog.picker { border: 0; border-radius: var(--radius); padding: 22px; max-width: 560px; width: calc(100% - 32px);
+  background: var(--card); color: var(--ink); box-shadow: 0 20px 60px rgba(80,5,14,.35); }
+dialog.picker::backdrop { background: rgba(80,5,14,.35); }
+.picker-actions { display: flex; gap: 10px; margin-top: 16px; }
+.picker-actions .btn { margin-top: 0; }
+
+.groc-recipes { display: grid; grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)); gap: 4px 24px; }
+.grocery.one { columns: 1; }

@@ -204,7 +204,7 @@
      --------------------------------------------------------------- */
   const ICONS = { '🍽': 'plate', '🍞': 'bread', '🐟': 'fish', '🥦': 'broccoli', '🍓': 'strawberry', '🧀': 'cheese', '🌶': 'chili',
     '💛': 'heart', '📊': 'chart', '💡': 'bulb', '🌈': 'rainbow', '💪': 'dumbbell', '🥔': 'potato', '🌽': 'corn', '🔥': 'fire',
-    '🔋': 'battery', '✨': 'sparkle', '🎉': 'sparkle', '☀': 'sun', '🌱': 'sprout', '⏱': 'timer', '📅': 'calendar' };
+    '🔋': 'battery', '✨': 'sparkle', '🎉': 'sparkle', '☀': 'sun', '🌱': 'sprout', '⏱': 'timer', '📅': 'calendar', '🛒': 'cart' };
   const ICON_RE = new RegExp('(' + Object.keys(ICONS).join('|') + ')\uFE0F?', 'gu');
   const ICON_TEST = new RegExp('(' + Object.keys(ICONS).join('|') + ')', 'u');  // no "g" flag, so repeated .test() calls are reliable
   const GROUP_ICON = { carbs: 'bread', protein: 'fish', veg: 'broccoli', fruit: 'strawberry', dairy: 'cheese', fun: 'chili' };
@@ -493,7 +493,7 @@
   function render() {
     document.body.classList.toggle('no-cal', !state.settings.calories);
     $('#cal-toggle').checked = state.settings.calories;
-    renderToday(); renderWeek(); renderRecipe(); renderLearn(); renderFoods();
+    renderToday(); renderWeek(); renderRecipe(); renderLearn(); renderFoods(); renderPlan(); renderPlannedToday();
     sketchify(document.body);
   }
 
@@ -671,8 +671,7 @@
     selected = new Set(); extras = []; calTouched = false;
     $('#log-note').value = ''; $('#log-time').value = localInputValue(new Date());
     render();
-    const ch = $('#cheer'); ch.innerHTML = cheerFor(entry); ch.hidden = false; sketchify(ch);
-    ch.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+    showCheer(entry);
   });
 
   document.addEventListener('click', (ev) => {
@@ -697,6 +696,193 @@
   });
   $('#clear-all').addEventListener('click', () => {
     if (confirm('Erase every logged meal and snack? This can\'t be undone.')) { state.entries = []; save(); render(); }
+  });
+
+  /* ===============================================================
+     MEAL PLANNING
+     state.plan = { 'YYYY-MM-DD': { breakfast: [items], lunch: [...], dinner: [...], snack: [...], logged: { slot: true } } }
+     item = { kind: 'food' | 'recipe', name, groups, cal }
+     =============================================================== */
+  const SLOTS = [['breakfast', 'Breakfast', 'sun'], ['lunch', 'Lunch', 'bread'], ['dinner', 'Dinner', 'plate'], ['snack', 'Snack', 'strawberry']];
+  let planWeek = 0;              // 0 = this week, 1 = next week
+  let pickerTarget = null;       // { day, slot }
+  let pickerSel = new Set();     // picked food ids / recipe names in the dialog
+
+  function isoDate(d) { const p = (n) => String(n).padStart(2, '0'); return d.getFullYear() + '-' + p(d.getMonth() + 1) + '-' + p(d.getDate()); }
+  function planDays(offset) {
+    const t = new Date(); t.setHours(12, 0, 0, 0);
+    const monday = new Date(t); monday.setDate(t.getDate() - ((t.getDay() + 6) % 7) + offset * 7);
+    return Array.from({ length: 7 }, (_, i) => { const d = new Date(monday); d.setDate(monday.getDate() + i); return d; });
+  }
+  function dayPlan(key) {
+    state.plan = state.plan || {};
+    return state.plan[key] || (state.plan[key] = { breakfast: [], lunch: [], dinner: [], snack: [], logged: {} });
+  }
+  function peekPlan(key) { return (state.plan && state.plan[key]) || null; }
+  function foodItem(f) { return { kind: 'food', name: f.name, groups: f.groups.slice(), cal: f.cal || 0 }; }
+  function recipeItem(r) { return { kind: 'recipe', name: r.name, groups: r.groups.slice(), cal: r.cal }; }
+  function eligibleRecipes() {
+    const pool = RECIPES.filter(r => recipeMatches(r) === r.needs.length);
+    return pool.length ? pool : RECIPES.slice(0, 3);
+  }
+  function dayGroups(p) {
+    const s = new Set(); if (!p) return s;
+    SLOTS.forEach(([k]) => (p[k] || []).forEach(it => it.groups.forEach(g => s.add(g))));
+    return s;
+  }
+
+  // Auto-fill: a balanced-ish plan built only from foods you like
+  function autofill(days) {
+    const solo = (f) => !/sauce/i.test(f.name);   // sauces go on things; never planned on their own
+    const by = (g) => state.foods.filter(f => f.groups.includes(g) && solo(f));
+    const prefer = (list, words) => list.filter(f => words.some(w => f.name.toLowerCase().includes(w)));
+    const breakfastBase = prefer(by('carbs'), ['toast', 'bread', 'grilled cheese']).concat(by('carbs')).slice(0, 4);
+    const breakfastSide = by('fruit').concat(by('protein'));
+    const lunchPref = prefer(state.foods.filter(solo), ['grilled cheese', 'mac', 'butter noodle', 'fries', 'potato']);
+    const lunchMain = lunchPref.length ? lunchPref : by('carbs');
+    const veg = by('veg').filter(f => !/pickle/i.test(f.name)).concat(by('veg'));
+    const snacks = by('fruit').concat(by('veg').filter(f => !/potato|fries/i.test(f.name)), by('fun'));
+    const recipes = eligibleRecipes();
+    const at = (arr, i) => arr.length ? arr[i % arr.length] : null;
+    days.forEach((d, i) => {
+      const p = dayPlan(isoDate(d));
+      if (!p.breakfast.length) { [at(breakfastBase, i), at(breakfastSide, i)].forEach(f => f && p.breakfast.push(foodItem(f))); }
+      if (!p.lunch.length) { [at(lunchMain, i), at(veg, i + 1)].forEach(f => f && p.lunch.push(foodItem(f))); }
+      if (!p.dinner.length) { const r = at(recipes, i + weekNumber()); if (r) p.dinner.push(recipeItem(r)); }
+      if (!p.snack.length) { const f = at(snacks, i); if (f) p.snack.push(foodItem(f)); }
+    });
+    save();
+  }
+
+  function itemTag(it, key, slot, idx) {
+    return '<span class="pitem ' + it.kind + '">' + (it.kind === 'recipe' ? ico('sparkle') + ' ' : '') + esc(it.name)
+      + '<button class="x" data-unplan="' + key + '|' + slot + '|' + idx + '" aria-label="Remove ' + esc(it.name) + '">×</button></span>';
+  }
+
+  function planSummary(days) {
+    const ps = days.map(d => peekPlan(isoDate(d)));
+    const planned = ps.filter(p => p && SLOTS.some(([k]) => p[k].length)).length;
+    if (!planned) return '<h2>Plan ahead, stress less 📅</h2><p>Deciding meals ahead means fewer "what do I even eat?" moments, and fewer long stretches without food. Tap <b>Fill my week for me</b> to start from foods you already like, then swap anything.</p>' + factHTML('timing');
+    const count = (g) => ps.filter(p => dayGroups(p).has(g)).length;
+    const bfast = ps.filter(p => p && p.breakfast.length).length;
+    const lowest = ['protein', 'veg', 'fruit', 'dairy'].sort((a, b) => count(a) - count(b))[0];
+    return '<h2>Look at this plan 🌱</h2><p>You have food planned on <b>' + planned + ' of 7 days</b>, breakfast on <b>' + bfast + '</b>, protein on <b>' + count('protein') + '</b> and veggies on <b>' + count('veg') + '</b>.</p>'
+      + (count(lowest) < 4 ? '<p class="tip">💡 Want to add a little more ' + GROUPS[lowest].label.toLowerCase() + '? Try ' + esc(suggestFrom(lowest)) + '.</p>' + factHTML(dailyFact(lowest))
+        : '<p class="tip">🌈 That\'s a really well-rounded week.</p>' + factHTML(bfast < 5 ? 'breakfast' : 'timing'));
+  }
+
+  function groceryList(days) {
+    const foods = new Map(), recipes = new Map();
+    days.forEach(d => {
+      const p = peekPlan(isoDate(d)); if (!p) return;
+      SLOTS.forEach(([k]) => p[k].forEach(it => {
+        if (it.kind === 'recipe') { const r = RECIPES.find(x => x.name === it.name); if (r) recipes.set(r.name, r.ingredients); }
+        else if (!foods.has(it.name.toLowerCase())) foods.set(it.name.toLowerCase(), it.name);
+      }));
+    });
+    return { foods: [...foods.values()], recipes: [...recipes.entries()] };
+  }
+
+  function renderPlan() {
+    const days = planDays(planWeek), todayKey = isoDate(new Date());
+    document.querySelectorAll('#plan-week button').forEach(b => b.classList.toggle('on', +b.dataset.week === planWeek));
+    $('#plan-summary').innerHTML = planSummary(days);
+    $('#plan-grid').innerHTML = days.map(d => {
+      const key = isoDate(d), p = peekPlan(key), have = dayGroups(p);
+      const slots = SLOTS.map(([k, label, icon]) => {
+        const items = p ? p[k] : [];
+        return '<div class="slot"><div class="slot-name">' + ico(icon) + ' ' + label + (p && p.logged && p.logged[k] ? ' <span class="done">✓ eaten</span>' : '') + '</div>'
+          + '<div class="slot-items">' + items.map((it, i) => itemTag(it, key, k, i)).join('') + '</div>'
+          + '<button class="add" data-plan-add="' + key + '|' + k + '">+ Add</button></div>';
+      }).join('');
+      const groupsRow = ['carbs', 'protein', 'veg', 'fruit', 'dairy'].map(g =>
+        '<span class="gdot' + (have.has(g) ? ' on' : '') + '" data-tip="' + esc(GROUPS[g].label + (have.has(g) ? ': planned' : ': not planned yet')) + '">' + ico(GROUP_ICON[g]) + '</span>').join('');
+      return '<div class="plan-day' + (key === todayKey ? ' today' : '') + '"><div class="plan-head"><h3>' + d.toLocaleDateString([], { weekday: 'long' })
+        + ' <span class="muted">' + d.toLocaleDateString([], { month: 'short', day: 'numeric' }) + '</span>' + (key === todayKey ? ' <span class="badge">Today</span>' : '') + '</h3>'
+        + '<div class="groups-row">' + groupsRow + '</div></div><div class="slots">' + slots + '</div></div>';
+    }).join('');
+
+    const groc = groceryList(days), wk = isoDate(days[0]);
+    state.grocery = state.grocery || {}; const checked = state.grocery[wk] || {};
+    const box = (n) => '<li><label><input type="checkbox" data-groc="' + wk + '|' + esc(n) + '"' + (checked[n] ? ' checked' : '') + '> <span>' + esc(n) + '</span></label></li>';
+    let html = '';
+    if (groc.foods.length) html += '<h3 class="sub">Everyday foods</h3><ul class="grocery">' + groc.foods.map(box).join('') + '</ul>';
+    if (groc.recipes.length) html += '<div class="groc-recipes">' + groc.recipes.map(([name, ings]) =>
+      '<div class="groc-recipe"><h3 class="sub">✨ ' + esc(name) + '</h3><ul class="grocery one">' + ings.map(box).join('') + '</ul></div>').join('') + '</div>';
+    $('#grocery').innerHTML = html || '<p class="muted">Add meals to your plan and your shopping list builds itself here.</p>';
+  }
+
+  // "Planned for today" card on the Today tab
+  function renderPlannedToday() {
+    const key = isoDate(new Date()), p = peekPlan(key), box = $('#planned-today');
+    const has = p && SLOTS.some(([k]) => p[k].length);
+    box.hidden = !has; if (!has) return;
+    box.innerHTML = '<h2>📅 Planned for today</h2><ul class="entries">' + SLOTS.filter(([k]) => p[k].length).map(([k, label, icon]) =>
+      '<li><span class="time">' + ico(icon) + ' ' + label + '</span><span class="what">' + esc(p[k].map(i => i.name).join(', ')) + '</span>'
+      + (p.logged && p.logged[k] ? '<span class="done">✓ eaten</span>' : '<button class="btn small" data-log-plan="' + k + '">I ate this</button>') + '</li>').join('') + '</ul>'
+      + '<p class="muted">Ate something different? No problem at all, just log what you had below.</p>';
+  }
+
+  function showCheer(entry) {
+    const ch = $('#cheer'); ch.innerHTML = cheerFor(entry); ch.hidden = false; sketchify(ch);
+    ch.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+  }
+
+  // ---- picker dialog ----
+  const picker = $('#picker');
+  function openPicker(day, slot) {
+    pickerTarget = { day, slot }; pickerSel = new Set();
+    const label = SLOTS.find(s => s[0] === slot)[1];
+    $('#picker-title').textContent = 'Add to ' + label + ', ' + new Date(day + 'T12:00').toLocaleDateString([], { weekday: 'long' });
+    $('#picker-foods').innerHTML = state.foods.map(f => '<button type="button" class="chip" data-pick="f:' + f.id + '">' + esc(f.name) + '</button>').join('');
+    const recs = eligibleRecipes();
+    $('#picker-recipes').innerHTML = recs.map(r => '<button type="button" class="chip" data-pick="r:' + esc(r.name) + '">' + ico('sparkle') + ' ' + esc(r.name) + '</button>').join('');
+    picker.showModal ? picker.showModal() : picker.setAttribute('open', '');
+  }
+  picker.addEventListener('click', (ev) => {
+    const c = ev.target.closest('[data-pick]');
+    if (c) { const v = c.dataset.pick; pickerSel.has(v) ? pickerSel.delete(v) : pickerSel.add(v); c.classList.toggle('on', pickerSel.has(v)); }
+  });
+  $('#picker-cancel').addEventListener('click', () => picker.close());
+  $('#picker-add').addEventListener('click', () => {
+    if (pickerTarget) {
+      const p = dayPlan(pickerTarget.day);
+      pickerSel.forEach(v => {
+        if (v.startsWith('f:')) { const f = state.foods.find(x => x.id === v.slice(2)); if (f) p[pickerTarget.slot].push(foodItem(f)); }
+        else { const r = RECIPES.find(x => x.name === v.slice(2)); if (r) p[pickerTarget.slot].push(recipeItem(r)); }
+      });
+      save(); render();
+    }
+    picker.close();
+  });
+
+  document.querySelectorAll('#plan-week button').forEach(b => b.addEventListener('click', () => { planWeek = +b.dataset.week; renderPlan(); sketchify($('#tab-plan')); }));
+  $('#plan-fill').addEventListener('click', () => { autofill(planDays(planWeek)); render(); });
+  $('#plan-clear').addEventListener('click', () => {
+    if (!confirm('Clear the plan for this week?')) return;
+    planDays(planWeek).forEach(d => { if (state.plan) delete state.plan[isoDate(d)]; }); save(); render();
+  });
+
+  document.addEventListener('click', (ev) => {
+    const add = ev.target.closest('[data-plan-add]');
+    if (add) { const [day, slot] = add.dataset.planAdd.split('|'); openPicker(day, slot); return; }
+    const un = ev.target.closest('[data-unplan]');
+    if (un) { const [day, slot, i] = un.dataset.unplan.split('|'); dayPlan(day)[slot].splice(+i, 1); save(); render(); return; }
+    const lp = ev.target.closest('[data-log-plan]');
+    if (lp) {
+      const slot = lp.dataset.logPlan, p = dayPlan(isoDate(new Date()));
+      const entry = { id: uid(), ts: new Date().toISOString(), type: slot === 'snack' ? 'snack' : 'meal',
+        foods: p[slot].map(it => ({ name: it.name, groups: it.groups.slice(), cal: it.cal || 0 })), note: 'From my plan' };
+      entry.cal = state.settings.calories ? (entry.foods.reduce((n, f) => n + f.cal, 0) || null) : null;
+      p.logged = p.logged || {}; p.logged[slot] = true;
+      state.entries.push(entry); save(); render(); showCheer(entry);
+    }
+  });
+  document.addEventListener('change', (ev) => {
+    const g = ev.target.closest('[data-groc]'); if (!g) return;
+    const i = g.dataset.groc.indexOf('|'), wk = g.dataset.groc.slice(0, i), name = g.dataset.groc.slice(i + 1);
+    state.grocery = state.grocery || {}; state.grocery[wk] = state.grocery[wk] || {};
+    state.grocery[wk][name] = g.checked; save();
   });
 
   render();
