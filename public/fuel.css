@@ -367,3 +367,28 @@ dialog.picker::backdrop { background: rgba(80,5,14,.35); }
 .idea .meta { display: flex; flex-wrap: wrap; gap: 4px; margin: 2px 0; }
 .idea .pill { background: #fff; font-size: .8rem; padding: 2px 10px; }
 .idea .pill.yes { background: var(--warmpink); }
+
+/* ---------- more olive through the layout ---------- */
+:root { --olive-light: #EDEDD3; --olive-mid: #DCDCAF; --olive-line: #C9C98E; }
+.top { border-bottom-color: var(--olive); }
+.card.olive { background: var(--olive-light); border-color: var(--olive-line); }
+.card.olive .idea { background: var(--buttercup); }
+.card.olive .chip { background: var(--buttercup); }
+.card.olive .chip.on { background: var(--olive); color: var(--buttercup); border-color: var(--olive); }
+.card.olive .food-list li { border-top-color: var(--olive-line); }
+.stat { background: var(--olive-mid); }
+.amount { background: var(--olive-light); }
+.card.brown .amount, .groups-grid .group-card:nth-child(even) .amount { background: var(--olive-mid); }
+.slot { background: var(--olive-light); }
+.plan-day { border-color: var(--olive-line); }
+.card.planned { background: var(--olive-light); border-color: var(--olive); }
+.pill.yes, .idea .pill.yes { background: var(--olive-mid); }
+.btn.ghost { border-color: var(--olive); }
+.btn.ghost:hover { background: var(--olive-light); }
+.card h2 { text-decoration: underline; text-decoration-color: var(--olive); text-decoration-thickness: 3px; text-underline-offset: 6px; }
+.card.hello h2, .card.cheer h2, .idea h2 { text-decoration: none; }
+.card.brown h2 { text-decoration-color: var(--olive-line); }
+.entries .tag { background: var(--olive); color: var(--buttercup); }
+.card.brown .tag.meal { background: var(--olive-mid); color: var(--garnet); }
+.seg { border-color: var(--olive-line); }
+.badge { background: var(--olive); }
