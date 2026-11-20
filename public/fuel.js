@@ -204,7 +204,7 @@
      --------------------------------------------------------------- */
   const ICONS = { '🍽': 'plate', '🍞': 'bread', '🐟': 'fish', '🥦': 'broccoli', '🍓': 'strawberry', '🧀': 'cheese', '🌶': 'chili',
     '💛': 'heart', '📊': 'chart', '💡': 'bulb', '🌈': 'rainbow', '💪': 'dumbbell', '🥔': 'potato', '🌽': 'corn', '🔥': 'fire',
-    '🔋': 'battery', '✨': 'sparkle', '🎉': 'sparkle', '☀': 'sun', '🌱': 'sprout', '⏱': 'timer', '📅': 'calendar', '🛒': 'cart' };
+    '🔋': 'battery', '✨': 'sparkle', '🎉': 'sparkle', '☀': 'sun', '🌱': 'sprout', '⏱': 'timer', '📅': 'calendar', '🛒': 'cart', '🔍': 'search' };
   const ICON_RE = new RegExp('(' + Object.keys(ICONS).join('|') + ')\uFE0F?', 'gu');
   const ICON_TEST = new RegExp('(' + Object.keys(ICONS).join('|') + ')', 'u');  // no "g" flag, so repeated .test() calls are reliable
   const GROUP_ICON = { carbs: 'bread', protein: 'fish', veg: 'broccoli', fruit: 'strawberry', dairy: 'cheese', fun: 'chili' };
@@ -493,7 +493,7 @@
   function render() {
     document.body.classList.toggle('no-cal', !state.settings.calories);
     $('#cal-toggle').checked = state.settings.calories;
-    renderToday(); renderWeek(); renderRecipe(); renderLearn(); renderFoods(); renderPlan(); renderPlannedToday();
+    renderToday(); renderWeek(); renderRecipe(); renderLearn(); renderFoods(); renderPlan(); renderPlannedToday(); renderIdeas();
     sketchify(document.body);
   }
 
@@ -904,6 +904,177 @@
     const i = g.dataset.groc.indexOf('|'), wk = g.dataset.groc.slice(0, i), name = g.dataset.groc.slice(i + 1);
     state.grocery = state.grocery || {}; state.grocery[wk] = state.grocery[wk] || {};
     state.grocery[wk][name] = g.checked; save();
+  });
+
+  /* ===============================================================
+     IDEAS: analyze liked foods, suggest similar foods and meals.
+     Catalog avoids chicken, Asian dishes, yogurt, deli meat and
+     cottage cheese.
+     =============================================================== */
+  const TRAITS = {
+    cheesy:  { label: 'cheesy', words: ['cheese', 'mac', 'alfredo', 'rosatella', 'parm', 'quesadilla'] },
+    creamy:  { label: 'creamy', words: ['alfredo', 'rosatella', 'mac', 'mash', 'cream', 'butter noodle'] },
+    garlic:  { label: 'garlicky & buttery', words: ['garlic', 'butter', 'alfredo', 'scampi'] },
+    crunchy: { label: 'salty & crunchy', words: ['pickle', 'cheeto', 'fries', 'toast', 'chip', 'cracker'] },
+    spicy:   { label: 'spicy', words: ['hot', 'spicy', 'cheeto', 'jalape', 'buffalo'] },
+    sweet:   { label: 'naturally sweet', words: ['corn', 'berry', 'apple', 'grape', 'banana', 'sweet potato', 'carrot'] },
+    meaty:   { label: 'hearty & meaty', words: ['steak', 'beef', 'burger', 'meatball'] },
+    seafood: { label: 'seafood', words: ['salmon', 'fish', 'shrimp', 'tuna', 'cod'] },
+    tangy:   { label: 'tangy', words: ['pickle', 'vinegar', 'tomato', 'rosatella'] },
+    comfort: { label: 'carb comfort', words: ['pasta', 'noodle', 'bread', 'toast', 'potato', 'fries', 'mac'] }
+  };
+
+  // [name, group, traits, because (liked keyword), why]
+  const IDEA_FOODS = [
+    ['Strawberries', 'fruit', ['sweet'], null, 'Mild, sweet and easy. 1 cup has about 85 mg of vitamin C, more than an orange (USDA).'],
+    ['Apple slices', 'fruit', ['sweet', 'crunchy'], 'pickle', 'Crunchy like your favorite snacks. A medium apple has about 4 g of fiber to keep you full (USDA).'],
+    ['Frozen grapes', 'fruit', ['sweet', 'crunchy'], 'cheeto', 'A cold, poppable late-night snack, about 100 calories a cup (USDA).'],
+    ['Bananas', 'fruit', ['sweet', 'comfort'], 'toast', 'Great on toast. One has about 420 mg of potassium and 3 g of fiber (USDA).'],
+    ['Clementines', 'fruit', ['sweet'], null, 'Easy to peel and snack on. Each has about 36 mg of vitamin C, around 40% of a day (USDA).'],
+    ['Green beans', 'veg', ['garlic', 'crunchy'], 'broccoli', 'Roasted with garlic butter, they taste a lot like your broccoli. About 4 g of fiber per cup (USDA).'],
+    ['Peas', 'veg', ['sweet', 'creamy'], 'corn', 'Sweet like corn and great stirred into mac or alfredo. ½ cup has about 4 g protein and 4 g fiber (USDA).'],
+    ['Baby carrots', 'veg', ['sweet', 'crunchy'], 'corn', 'Sweet and crunchy. ½ cup gives about half your daily vitamin A (NIH).'],
+    ['Cauliflower', 'veg', ['cheesy', 'creamy', 'garlic'], 'broccoli', 'Broccoli\'s milder cousin. Melts into mac and cheese. 1 cup has about 50 mg of vitamin C (USDA).'],
+    ['Spinach', 'veg', ['creamy', 'garlic'], 'alfredo', 'Stir a handful into alfredo or rosatella and it disappears. ½ cup cooked has about 3 mg of iron (NIH).'],
+    ['Sweet potato fries', 'veg', ['sweet', 'crunchy', 'comfort'], 'fries', 'Just like fries, with a bonus: one sweet potato has over 100% of your daily vitamin A (NIH).'],
+    ['Cucumber slices', 'veg', ['crunchy', 'tangy'], 'pickle', 'Pickles are cucumbers! Fresh slices with salt are cool, crunchy and about 95% water (USDA).'],
+    ['Shrimp', 'protein', ['seafood', 'garlic'], 'salmon', 'Garlic butter shrimp cooks in 5 minutes. 3 oz has about 20 g of protein (USDA).'],
+    ['Eggs', 'protein', ['comfort', 'cheesy'], 'toast', 'Scrambled with cheese on toast makes an easy protein breakfast. 1 egg has about 6 g of protein (USDA).'],
+    ['Tuna', 'protein', ['seafood', 'cheesy'], 'grilled cheese', 'Makes a tuna melt, basically a grilled cheese with protein. 3 oz has about 20 g of protein (USDA).'],
+    ['Cod', 'protein', ['seafood', 'garlic'], 'salmon', 'A very mild white fish if you like salmon. 3 oz has about 19 g of protein (USDA).'],
+    ['Peanut butter', 'protein', ['comfort', 'sweet'], 'toast', 'On toast with banana for breakfast. 2 tbsp has about 7 g of protein (USDA).'],
+    ['String cheese', 'dairy', ['cheesy'], 'cheese', 'A grab-and-go snack with about 7 g of protein per stick (USDA).'],
+    ['Milk', 'dairy', ['creamy'], 'mac', '1 cup has about 300 mg of calcium and 8 g of protein (NIH / USDA).'],
+    ['Parmesan', 'dairy', ['cheesy', 'garlic'], 'alfredo', 'Sprinkle on broccoli or green beans to make veggies taste like your pasta.'],
+    ['Whole-wheat toast', 'carbs', ['comfort', 'crunchy'], 'toast', 'Same toast, more staying power: about 2 g of fiber per slice vs. under 1 g in white (USDA).'],
+    ['English muffins', 'carbs', ['comfort', 'garlic'], 'toast', 'Toasted with butter, or as a mini pizza. An easy breakfast base.'],
+    ['Tortillas', 'carbs', ['comfort', 'cheesy'], 'grilled cheese', 'For quesadillas, which are basically grilled cheese in a new shape.'],
+    ['Crackers', 'carbs', ['crunchy'], 'cheeto', 'Crunchy and salty. Pair with cheese for a snack that keeps you full longer.']
+  ];
+
+  // name, anchors (liked keywords: any match), groups, likeOf, how-to, shopping items
+  const IDEA_MEALS = [
+    { name: 'Steak & Cheese Quesadilla', anchors: ['steak', 'grilled cheese'], groups: ['protein', 'carbs', 'dairy'], likeOf: 'grilled cheese + steak',
+      how: 'Tortilla, shredded cheese, thin-sliced steak. Fold and pan-crisp 2–3 min per side.', shop: ['Tortillas', 'Shredded cheese', 'Steak'] },
+    { name: 'Tuna Melt', anchors: ['grilled cheese'], groups: ['protein', 'carbs', 'dairy'], likeOf: 'grilled cheese',
+      how: 'Mix tuna with a little mayo, layer with cheese on bread, and cook it just like grilled cheese.', shop: ['Canned tuna', 'Mayo', 'Bread', 'Cheese slices'] },
+    { name: 'Garlic Butter Shrimp & Noodles', anchors: ['butter noodle', 'salmon', 'noodle'], groups: ['protein', 'carbs'], likeOf: 'butter noodles + salmon',
+      how: 'Sauté shrimp in butter and garlic for 4–5 min and toss with buttered noodles and parmesan.', shop: ['Shrimp', 'Noodles', 'Butter', 'Garlic', 'Parmesan'] },
+    { name: 'Cheesy Egg Toast', anchors: ['toast'], groups: ['protein', 'carbs', 'dairy'], likeOf: 'toast',
+      how: 'Scramble 2 eggs with shredded cheese and pile them on buttered toast. Breakfast in 5 minutes.', shop: ['Eggs', 'Shredded cheese', 'Bread'] },
+    { name: 'French Bread Pizza', anchors: ['garlic bread', 'rosatella'], groups: ['carbs', 'dairy', 'veg'], likeOf: 'garlic bread',
+      how: 'Split garlic bread, add sauce, mozzarella and chopped broccoli. Bake at 425°F for 8–10 min.', shop: ['Garlic bread', 'Pizza sauce', 'Mozzarella', 'Broccoli'] },
+    { name: 'Smash Burger with Pickles & Fries', anchors: ['beef', 'burger', 'pickle'], groups: ['protein', 'carbs', 'veg'], likeOf: 'beef + pickles + fries',
+      how: 'Smash a ball of beef thin in a hot pan, add cheese, and top with lots of pickles. Fries on the side.', shop: ['Ground beef', 'Burger buns', 'Cheese slices', 'Pickles', 'Frozen fries'] },
+    { name: 'Steak & Broccoli Baked Potato Bar', anchors: ['steak', 'potato', 'broccoli'], groups: ['protein', 'carbs', 'veg', 'dairy'], likeOf: 'steak + potatoes + broccoli',
+      how: 'Baked potato topped with sliced steak, steamed broccoli, cheese and butter.', shop: ['Russet potatoes', 'Steak', 'Broccoli', 'Shredded cheese'] },
+    { name: 'Cauliflower Mac & Cheese', anchors: ['mac'], groups: ['carbs', 'dairy', 'veg'], likeOf: 'mac and cheese',
+      how: 'Add small cauliflower florets to the pasta water for the last 4 minutes. They melt into the cheese sauce.', shop: ['Mac and cheese', 'Cauliflower'] },
+    { name: 'Spinach Rosatella Pasta', anchors: ['rosatella', 'alfredo', 'pasta'], groups: ['carbs', 'dairy', 'veg'], likeOf: 'rosatella / alfredo pasta',
+      how: 'Stir 2 handfuls of spinach into the warm sauce until wilted, then toss with pasta.', shop: ['Pasta', 'Rosatella sauce', 'Baby spinach'] },
+    { name: 'Salmon Tacos with Sweet Corn', anchors: ['salmon', 'corn'], groups: ['protein', 'carbs', 'veg'], likeOf: 'salmon + sweet corn',
+      how: 'Flake baked salmon into warm tortillas and top with buttery corn and a squeeze of lime.', shop: ['Salmon', 'Tortillas', 'Sweet corn', 'Lime'] },
+    { name: 'Cheesy Corn & Potato Chowder', anchors: ['corn', 'potato'], groups: ['carbs', 'veg', 'dairy'], likeOf: 'sweet corn + potatoes',
+      how: 'Simmer diced potatoes and corn in broth and add milk and cheddar at the end. Cozy and creamy.', shop: ['Potatoes', 'Sweet corn', 'Broth', 'Milk', 'Cheddar'] },
+    { name: 'Snack Board (instead of grazing)', anchors: ['pickle', 'cheeto'], groups: ['fruit', 'dairy', 'veg', 'carbs'], likeOf: 'pickles + crunchy snacks',
+      how: 'One plate of apple slices, string cheese, pickles and crackers. A real mini-meal that hits 4 food groups.', shop: ['Apples', 'String cheese', 'Pickles', 'Crackers'] },
+    { name: 'Strawberry-Banana Milk Smoothie', anchors: ['toast', 'mac', 'cheese'], groups: ['fruit', 'dairy'], likeOf: 'late-night sweet cravings',
+      how: 'Blend 1 cup milk, a banana and a handful of frozen strawberries. No yogurt needed!', shop: ['Milk', 'Bananas', 'Frozen strawberries'] },
+    { name: 'Garlic Parmesan Green Beans + Steak', anchors: ['steak', 'garlic', 'broccoli'], groups: ['protein', 'veg', 'dairy'], likeOf: 'steak + garlic',
+      how: 'Roast green beans with butter, garlic and parmesan at 425°F for 15 min while the steak rests.', shop: ['Green beans', 'Parmesan', 'Garlic', 'Steak'] }
+  ];
+
+  let ideaFilter = 'all';
+  const likedNames = () => state.foods.map(f => f.name.toLowerCase());
+  function profile() {
+    const names = likedNames(), score = {};
+    Object.keys(TRAITS).forEach(t => { score[t] = names.filter(n => TRAITS[t].words.some(w => n.includes(w))).length; });
+    const groupCount = {}; GROUP_KEYS.forEach(g => groupCount[g] = state.foods.filter(f => f.groups.includes(g)).length);
+    return { score, groupCount };
+  }
+  function likedMatch(word) { return state.foods.find(f => f.name.toLowerCase().includes(word)); }
+
+  function renderIdeas() {
+    const { score, groupCount } = profile();
+    const top = Object.keys(score).filter(t => score[t] > 0).sort((a, b) => score[b] - score[a]).slice(0, 4);
+    const main = ['carbs', 'protein', 'veg', 'fruit', 'dairy'];
+    const missing = main.filter(g => groupCount[g] === 0), thin = main.filter(g => groupCount[g] > 0 && groupCount[g] <= 2);
+    const strongest = main.slice().sort((a, b) => groupCount[b] - groupCount[a])[0];
+    const maxC = Math.max(1, ...main.map(k => groupCount[k]));
+    const bars = main.map(g => '<div class="pbar"><span class="pl">' + ico(GROUP_ICON[g]) + ' ' + esc(GROUPS[g].label) + '</span><span class="track"><span class="fill" style="width:'
+      + (groupCount[g] / maxC * 100) + '%"></span></span><b>' + groupCount[g] + '</b></div>').join('');
+    $('#ideas-profile').innerHTML = '<div class="profile-cols"><div><h2>🔍 Your food profile</h2>'
+      + '<p>You have <b>' + state.foods.length + ' foods</b> on your list. Your taste leans <b>' + (top.length ? top.map(t => TRAITS[t].label).join(', ') : 'comforting and simple') + '</b>. '
+      + 'That\'s a great base, because those flavors are easy to build new foods around.</p>'
+      + '<p>Your list is strongest in <b>' + esc(GROUPS[strongest].label.toLowerCase()) + '</b>'
+      + (missing.length ? ' and has <b>no ' + missing.map(g => GROUPS[g].label.toLowerCase()).join(' or ') + '</b> yet' : '')
+      + (thin.length ? ', with only a few ' + thin.map(g => GROUPS[g].label.toLowerCase()).join(' and ') : '') + '. The ideas below lean that way, using flavors you already like.</p>'
+      + '<div class="traits">' + top.map(t => '<span class="pill">' + esc(TRAITS[t].label) + '</span>').join('') + '</div></div>'
+      + '<div class="pbars"><p class="lbl">Foods on your list, by group</p>' + bars + '</div></div>';
+
+    // ---- food suggestions ----
+    const names = likedNames(), hidden = state.hiddenIdeas || [];
+    const scored = IDEA_FOODS.filter(([n]) => !names.includes(n.toLowerCase()) && !hidden.includes(n)).map(([n, g, traits, because, why]) => {
+      let s = traits.reduce((a, t) => a + (score[t] || 0), 0);
+      if (groupCount[g] === 0) s += 6; else if (groupCount[g] <= 2) s += 3;
+      const b = because && likedMatch(because);
+      if (b) s += 2;
+      return { n, g, because: b ? b.name : null, why, s };
+    }).sort((a, b) => b.s - a.s);
+    const groupsPresent = ['all'].concat(main.filter(g => scored.some(x => x.g === g)));
+    if (!groupsPresent.includes(ideaFilter)) ideaFilter = 'all';
+    $('#ideas-filter').innerHTML = groupsPresent.map(g => '<button type="button" class="chip' + (g === ideaFilter ? ' on' : '') + '" data-idea-filter="' + g + '">'
+      + (g === 'all' ? 'Top picks' : ico(GROUP_ICON[g]) + ' ' + esc(GROUPS[g].label)) + '</button>').join('');
+    const list = ideaFilter === 'all' ? scored.slice(0, 8) : scored.filter(x => x.g === ideaFilter);
+    $('#ideas-foods').innerHTML = list.map(x => '<div class="idea">'
+      + '<div class="idea-head">' + ico(GROUP_ICON[x.g], 'big') + '<div><h3>' + esc(x.n) + '</h3><span class="muted">' + esc(GROUPS[x.g].label)
+      + (x.because ? ' · because you like ' + esc(x.because.toLowerCase()) : '') + '</span></div></div>'
+      + '<p>📊 ' + esc(x.why) + '</p>'
+      + '<div class="idea-actions"><button class="btn small" data-idea-shop="' + esc(x.n) + '">🛒 Shopping list</button>'
+      + '<button class="btn small soft" data-idea-like="' + esc(x.n) + '|' + x.g + '">💛 I\'ll try it</button>'
+      + '<button class="linkish" data-idea-hide="' + esc(x.n) + '">Not for me</button></div></div>').join('')
+      || '<p class="muted">You\'ve added or hidden everything here. Amazing!</p>';
+
+    // ---- meal suggestions ----
+    const meals = IDEA_MEALS.filter(m => !hidden.includes(m.name)).map(m => {
+      const hits = m.anchors.filter(a => likedMatch(a));
+      const adds = m.groups.filter(g => groupCount[g] <= 2);
+      return { m, hits, adds, s: hits.length * 3 + adds.length * 2 };
+    }).filter(x => x.hits.length).sort((a, b) => b.s - a.s).slice(0, 6);
+    $('#ideas-meals').innerHTML = meals.map(({ m, adds }) => '<div class="idea meal">'
+      + '<h3>' + esc(m.name) + '</h3><p class="muted">Like your ' + esc(m.likeOf) + '</p>'
+      + '<div class="meta">' + m.groups.map(g => '<span class="pill' + (adds.includes(g) ? ' yes' : '') + '">' + ico(GROUP_ICON[g]) + ' ' + esc(GROUPS[g].label) + '</span>').join('') + '</div>'
+      + '<p>' + esc(m.how) + '</p>'
+      + (adds.length ? '<p class="tip">🌱 Sneaks in ' + adds.map(g => GROUPS[g].label.toLowerCase()).join(' & ') + '</p>' : '')
+      + '<div class="idea-actions"><button class="btn small" data-meal-shop="' + esc(m.name) + '">🛒 Add ingredients</button>'
+      + '<button class="linkish" data-idea-hide="' + esc(m.name) + '">Not for me</button></div></div>').join('')
+      || '<p class="muted">Add a few more foods you like and meal ideas will show up here.</p>';
+
+    $('#ideas-hidden').innerHTML = hidden.length ? hidden.length + ' idea' + (hidden.length > 1 ? 's' : '') + ' hidden. <button class="linkish" id="ideas-unhide">Show them again</button>' : '';
+  }
+
+  function addToShopping(items) {
+    const wk = isoDate(planDays(0)[0]);
+    state.groceryExtra = state.groceryExtra || {};
+    const list = state.groceryExtra[wk] = state.groceryExtra[wk] || [];
+    let added = 0;
+    items.forEach(n => { if (!list.some(x => x.toLowerCase() === n.toLowerCase())) { list.push(n); added++; } });
+    save(); return added;
+  }
+  function flash(btn, text) { const old = btn.innerHTML; btn.textContent = text; btn.disabled = true; setTimeout(() => { btn.innerHTML = old; btn.disabled = false; }, 1600); }
+
+  document.addEventListener('click', (ev) => {
+    const f = ev.target.closest('[data-idea-filter]');
+    if (f) { ideaFilter = f.dataset.ideaFilter; renderIdeas(); sketchify($('#tab-ideas')); return; }
+    const sh = ev.target.closest('[data-idea-shop]');
+    if (sh) { const n = addToShopping([sh.dataset.ideaShop]); renderPlan(); sketchify($('#tab-plan')); flash(sh, n ? '✓ Added to this week\'s list' : '✓ Already on your list'); return; }
+    const ms = ev.target.closest('[data-meal-shop]');
+    if (ms) { const m = IDEA_MEALS.find(x => x.name === ms.dataset.mealShop); const n = addToShopping(m.shop); renderPlan(); sketchify($('#tab-plan')); flash(ms, '✓ Added ' + n + ' item' + (n === 1 ? '' : 's')); return; }
+    const lk = ev.target.closest('[data-idea-like]');
+    if (lk) { const [n, g] = lk.dataset.ideaLike.split('|'); state.foods.push({ id: uid(), name: n, groups: [g], cal: 0 }); save(); render(); return; }
+    const hd = ev.target.closest('[data-idea-hide]');
+    if (hd) { state.hiddenIdeas = (state.hiddenIdeas || []).concat(hd.dataset.ideaHide); save(); renderIdeas(); sketchify($('#tab-ideas')); return; }
+    if (ev.target.id === 'ideas-unhide') { state.hiddenIdeas = []; save(); renderIdeas(); sketchify($('#tab-ideas')); }
   });
 
   render();
