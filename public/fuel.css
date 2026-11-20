@@ -946,3 +946,127 @@ footer, footer a, main > section > p.muted, .plan-controls + p.muted, #ideas-hid
 .addlist li { background: var(--p-card); }
 .tooltip { background: var(--p-ink); color: var(--p-card); }
 dialog.picker { background: var(--p-card); color: var(--p-ink); }
+
+/* =====================================================================
+   EDGY EDITORIAL THEMES: Cherry Noir, Moody Moss, Ink & Paper
+   ===================================================================== */
+body[data-theme="noir"] { --p-bg:#17110F; --p-card:#221A17; --p-ink:#F3EBDD; --p-soft:#B8AA98; --p-line:#3A2E29; --p-accent:#A3243B; --p-acc-ink:#F3EBDD; --p-a1:#2B3326; --p-a2:#3A3122; --p-a3:#3B2127; --p-a4:#222D36; --p-dark:#F3EBDD; --p-plate:#B5C4A5; --p-plate-part:#E8A5B4; --e-invert-ink:#17110F; --e-invert-soft:#5E534C; --p-pattern:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='260' height='260' viewBox='0 0 260 260'%3E%3Cg fill='none' stroke='%232C211D' stroke-width='1.6' stroke-linecap='round'%3E%3Cpath d='M10 50c14-14 28 14 42 0s28 14 42 0'/%3E%3Cpath d='M160 30c10 0 16 6 16 14s-6 12-12 12-10-4-10-9 4-7 8-7'/%3E%3Cpath d='M210 110c-10 12 10 22 0 34s10 22 0 34'/%3E%3Cpath d='M40 150c16-6 22 14 38 8s22-18 38-12'/%3E%3Cpath d='M130 210c12-12 24 12 36 0s24 12 36 0'/%3E%3Cpath d='M30 230c0-8 12-8 12 0s12 8 12 0'/%3E%3Ccircle cx='120' cy='120' r='2' fill='%232C211D' stroke='none'/%3E%3Ccircle cx='240' cy='40' r='2' fill='%232C211D' stroke='none'/%3E%3C/g%3E%3C/svg%3E"); }
+body[data-theme="moss"] { --p-bg:#151913; --p-card:#1F241B; --p-ink:#ECEBDD; --p-soft:#AEB09C; --p-line:#343B2D; --p-accent:#C9D6B5; --p-acc-ink:#151913; --p-a1:#2B3326; --p-a2:#38331F; --p-a3:#3A2629; --p-a4:#232E35; --p-dark:#ECEBDD; --p-plate:#C9D6B5; --p-plate-part:#E8A5B4; --e-invert-ink:#151913; --e-invert-soft:#55594A; --p-pattern:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='260' height='260' viewBox='0 0 260 260'%3E%3Cg fill='none' stroke='%23252B1F' stroke-width='1.6' stroke-linecap='round'%3E%3Cpath d='M10 50c14-14 28 14 42 0s28 14 42 0'/%3E%3Cpath d='M160 30c10 0 16 6 16 14s-6 12-12 12-10-4-10-9 4-7 8-7'/%3E%3Cpath d='M210 110c-10 12 10 22 0 34s10 22 0 34'/%3E%3Cpath d='M40 150c16-6 22 14 38 8s22-18 38-12'/%3E%3Cpath d='M130 210c12-12 24 12 36 0s24 12 36 0'/%3E%3Cpath d='M30 230c0-8 12-8 12 0s12 8 12 0'/%3E%3Ccircle cx='120' cy='120' r='2' fill='%23252B1F' stroke='none'/%3E%3Ccircle cx='240' cy='40' r='2' fill='%23252B1F' stroke='none'/%3E%3C/g%3E%3C/svg%3E"); }
+body[data-theme="paper"] { --p-bg:#EFE8DC; --p-card:#F8F3EA; --p-ink:#1A1412; --p-soft:#5E534C; --p-line:#1A1412; --p-accent:#1A1412; --p-acc-ink:#F8F3EA; --p-a1:#DCE3D0; --p-a2:#F1E2B0; --p-a3:#F0D1D8; --p-a4:#D4E2ED; --p-dark:#1A1412; --p-plate:#B5C4A5; --p-plate-part:#E8A5B4; --e-invert-ink:#F8F3EA; --e-invert-soft:#CFC4B5; --p-pattern:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='260' height='260' viewBox='0 0 260 260'%3E%3Cg fill='none' stroke='%23DCD2C1' stroke-width='1.6' stroke-linecap='round'%3E%3Cpath d='M10 50c14-14 28 14 42 0s28 14 42 0'/%3E%3Cpath d='M160 30c10 0 16 6 16 14s-6 12-12 12-10-4-10-9 4-7 8-7'/%3E%3Cpath d='M210 110c-10 12 10 22 0 34s10 22 0 34'/%3E%3Cpath d='M40 150c16-6 22 14 38 8s22-18 38-12'/%3E%3Cpath d='M130 210c12-12 24 12 36 0s24 12 36 0'/%3E%3Cpath d='M30 230c0-8 12-8 12 0s12 8 12 0'/%3E%3Ccircle cx='120' cy='120' r='2' fill='%23DCD2C1' stroke='none'/%3E%3Ccircle cx='240' cy='40' r='2' fill='%23DCD2C1' stroke='none'/%3E%3C/g%3E%3C/svg%3E"); }
+
+body.edgy { --e-p1:#E8A5B4; --e-p2:#B5C4A5; --e-p3:#BFD7EA; --e-p4:#F2D98A; --e-pop-ink:#17110F;
+  --e-serif: "Instrument Serif", "Cormorant Garamond", Georgia, serif; --e-mono: "DM Mono", ui-monospace, monospace; }
+
+/* film grain */
+body.edgy::after { display: block; content: ""; position: fixed; inset: 0; pointer-events: none; z-index: 50; opacity: .09; mix-blend-mode: overlay;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='g'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.85' numOctaves='2' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23g)'/%3E%3C/svg%3E"); }
+
+/* editorial type */
+.edgy h2, .edgy h3, .edgy .stat b, .edgy .howto-title, .edgy .plan-head h3 { font-family: var(--e-serif); font-weight: 400; letter-spacing: -.01em; }
+.edgy h2 { font-size: 2.1rem; line-height: 1.05; }
+.edgy h3 { font-size: 1.35rem; }
+.edgy .card h2::after { width: 100%; height: 1px; opacity: .35; background: currentColor; margin-top: 10px; }
+.edgy .card.hello h2::after { display: block; }
+.edgy .lbl, .edgy .tabs button, .edgy .btn, .edgy .pill, .edgy .slot-name, .edgy .seg button, .edgy .badge, .edgy .entries .tag, .edgy .fod, .edgy .theme-dots span, .edgy h3.sub {
+  font-family: var(--e-mono); text-transform: uppercase; letter-spacing: .08em; font-weight: 500; font-size: .78rem; }
+.edgy h3.sub { font-size: .8rem; }
+.edgy .stat b { font-size: 2.6rem; font-style: italic; }
+
+/* header */
+.edgy .top { background: var(--p-bg); box-shadow: 0 1px 0 var(--p-line); padding-top: 18px; }
+.edgy .top h1 { font-family: var(--e-serif); font-style: italic; font-weight: 400; font-size: 3rem; color: var(--p-ink); letter-spacing: -.02em; }
+.edgy .logo { color: var(--p-ink); }
+.edgy .tabs button { border-radius: 0; padding: 10px 4px; margin-right: 18px; color: var(--p-soft); background: transparent; border-bottom: 2px solid transparent; }
+.edgy .tabs button:hover { background: transparent; color: var(--p-ink); }
+.edgy .tabs button.on { background: transparent; color: var(--p-ink); border-bottom-color: var(--e-p1); }
+
+/* cards: flat, sharp, hairline */
+.edgy main .card, .edgy .plan-day { border-radius: 6px; box-shadow: none; border: 1px solid var(--p-line) !important; position: relative; }
+.edgy .idea, .edgy .stat, .edgy .slot, .edgy .fact, .edgy .pbars, .edgy .amount, .edgy .steps li, .edgy .extra-col, .edgy .addlist li { border-radius: 4px; }
+
+/* color-block "pop" cards with scrapbook tape */
+.edgy .card.hello { background: var(--e-p1); color: var(--e-pop-ink); border-color: transparent !important; }
+.edgy .card.hello.tint-red { background: var(--e-p2); }
+.edgy .card.hello.tint-soil { background: var(--e-p3); }
+.edgy #ideas-profile.card.hello { background: var(--e-p4); }
+.edgy .card.hello .muted, .edgy .card.hello .tip, .edgy .card.hello b, .edgy .card.hello .lbl { color: var(--e-pop-ink); }
+.edgy .card.hello .fact { background: rgba(255,255,255,.55); color: var(--e-pop-ink); border-left-color: var(--e-pop-ink) !important; }
+.edgy .card.hello .fact .src { color: var(--e-pop-ink); opacity: .7; }
+.edgy .card.hello .pbars, .edgy .card.hello .traits .pill { background: rgba(255,255,255,.55); color: var(--e-pop-ink); }
+.edgy .card.hello .pbar .track { background: rgba(0,0,0,.08); } .edgy .card.hello .pbar .fill { background: var(--e-pop-ink); }
+.edgy .card.hello::before { content: ""; position: absolute; top: -11px; left: 38px; width: 96px; height: 22px; background: rgba(243,235,221,.55);
+  transform: rotate(-4deg); box-shadow: 0 1px 2px rgba(0,0,0,.15); }
+.edgy .card.hello.tint-red::before { left: auto; right: 48px; transform: rotate(3deg); }
+
+/* inverted cards (cream on dark themes, black on paper) */
+.edgy .card.brown, .edgy .groups-grid .group-card.g-protein, .edgy .groups-grid .group-card.g-fruit, .edgy .groups-grid .group-card.g-fun {
+  background: var(--p-dark); color: var(--e-invert-ink); border-color: transparent !important; }
+.edgy .card.brown .muted, .edgy .card.brown .cal-hint, .edgy .card.brown .lbl .muted, .edgy .card.brown details.other summary,
+.edgy .groups-grid .group-card:nth-child(even) .muted, .edgy .groups-grid .group-card:nth-child(even) .fod, .edgy .card.brown .linkish { color: var(--e-invert-soft); opacity: 1; }
+.edgy .card.brown h2::after { background: var(--e-invert-ink); }
+.edgy .card.brown .tip, .edgy .card.brown .lbl, .edgy .card.brown h3.sub { color: var(--e-invert-ink); }
+.edgy .card.brown .btn:not(.ghost) { background: var(--p-accent); color: var(--p-acc-ink); }
+.edgy .card.brown .chip { background: transparent; color: var(--e-invert-ink); border: 1px solid var(--e-invert-soft); }
+.edgy .card.brown .chip.on, .edgy .pantry-chips .chip, .edgy .extra-col .chip.on { background: var(--e-p1); color: var(--e-pop-ink); border-color: var(--e-p1); }
+.edgy .card.brown input, .edgy .card.brown select { background: transparent; color: var(--e-invert-ink); border: 1px solid var(--e-invert-soft); }
+.edgy .card.brown .extra-col { background: transparent; border: 1px solid var(--e-invert-soft) !important; }
+.edgy .card.brown .extra-col .chips.quick .chip { color: var(--e-invert-soft); }
+.edgy .card.brown .entries li { border-top-color: var(--e-invert-soft); }
+.edgy .card.brown .del { color: var(--e-invert-soft); }
+.edgy .card.brown .tag.meal { background: var(--e-p3); color: var(--e-pop-ink); }
+.edgy .grocery input { accent-color: var(--e-p1); }
+.edgy .card.brown .idea, .edgy .card.brown .idea p, .edgy .card.brown .idea h3 { color: var(--p-ink); }
+.edgy .card.brown .idea .muted { color: var(--p-soft); }
+.edgy .card.brown .fact, .edgy .groups-grid .group-card:nth-child(even) .fact, .edgy .groups-grid .group-card:nth-child(even) .amount { background: var(--p-card); color: var(--p-ink); }
+.edgy .card.brown .seg { background: transparent; border-color: var(--e-invert-soft); }
+.edgy .card.brown .seg button { color: var(--e-invert-ink); }
+.edgy .card.brown .seg button.on { background: var(--p-accent); color: var(--p-acc-ink); }
+
+/* buttons: sharp, bold */
+.edgy .btn { border-radius: 3px; padding: 12px 20px; }
+.edgy .btn.small { padding: 8px 12px; }
+.edgy .btn.ghost { border: 1px solid var(--p-ink); color: var(--p-ink); border-radius: 3px; }
+.edgy .chip, .edgy .pill, .edgy .pitem { border-radius: 3px; }
+.edgy .seg { border-radius: 3px; } .edgy .seg button { border-radius: 2px; }
+.edgy .tabs button.on, .edgy .chip.on { box-shadow: none; }
+.edgy .chip.on { background: var(--e-p1); color: var(--e-pop-ink); border-color: var(--e-p1); }
+
+/* stat tiles in color blocks */
+.edgy .stats .stat:nth-child(1) { background: var(--e-p3); color: var(--e-pop-ink); }
+.edgy .stats .stat:nth-child(2) { background: var(--e-p1); color: var(--e-pop-ink); }
+.edgy .stats .stat:nth-child(3) { background: var(--e-p4); color: var(--e-pop-ink); }
+.edgy .stats .stat:nth-child(4) { background: var(--e-p2); color: var(--e-pop-ink); }
+.edgy .stats .stat span { color: var(--e-pop-ink); }
+
+/* plan */
+.edgy .plan-day:nth-child(even) { background: var(--p-card); }
+.edgy .plan-day.today { border: 1px solid var(--e-p1) !important; }
+.edgy .badge { background: var(--e-p1); color: var(--e-pop-ink); }
+.edgy .pitem.recipe { background: var(--e-p1); color: var(--e-pop-ink); } .edgy .pitem.recipe .x { color: var(--e-pop-ink); }
+.edgy .pitem.dish { background: var(--e-p3); color: var(--e-pop-ink); }
+.edgy .pitem.dish .howto-link, .edgy .pitem.dish .x { color: var(--e-pop-ink); }
+
+/* group-colored pills pop */
+.edgy .pill.g-carbs { background: var(--e-p4); color: var(--e-pop-ink); }
+.edgy .pill.g-protein { background: var(--p-a2); }
+.edgy .pill.g-veg { background: var(--e-p2); color: var(--e-pop-ink); }
+.edgy .pill.g-fruit { background: var(--e-p1); color: var(--e-pop-ink); }
+.edgy .pill.g-fun { background: var(--e-p3); color: var(--e-pop-ink); }
+.edgy .pill.g-dairy { background: transparent; border: 1px solid currentColor; }
+
+.edgy .theme-dots button { border-radius: 50%; }
+.edgy footer { font-family: var(--e-mono); font-size: .78rem; letter-spacing: .03em; }
+/* edgy fixes */
+.edgy .plan-day .slot, .edgy .plan-day:nth-child(even) .slot { background: var(--p-bg); }
+.edgy .slot-name { color: var(--p-ink); }
+.edgy .seg { background: transparent; border: 1px solid var(--p-line); }
+.edgy .seg button { color: var(--p-ink); }
+.edgy .seg button.on { background: var(--p-accent); color: var(--p-acc-ink); }
+.edgy .card.brown .seg button.on, .edgy .card.brown .btn:not(.ghost) { background: var(--e-p1); color: var(--e-pop-ink); }
+.edgy .chart text { fill: var(--p-soft); }
+.edgy .chart .lab { fill: var(--p-ink); }
+.edgy .chart.plate .plab { fill: var(--p-ink); paint-order: stroke; stroke: var(--p-card); stroke-width: 3px; stroke-linejoin: round; }
+.edgy .plan-controls + p.muted, .edgy main > section > p.muted { color: var(--p-soft); }
+.edgy .slot .add { color: var(--p-ink); border-color: var(--p-soft); }
+.edgy .pitem.try { color: var(--p-ink); }
+@media (max-width: 600px) { .edgy .top h1 { font-size: 2.1rem; } .edgy .logo { width: 40px; height: 40px; } .theme-dots span { display: none; } }

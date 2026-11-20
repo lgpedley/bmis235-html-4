@@ -560,7 +560,8 @@
 
   const THEME_LABELS = {"sage": "Sage Cottage", "strawberry": "Strawberry Milk", "butterblue": "Butter & Blue", "mocha": "Mocha Latte"};
   function applyTheme() {
-    const t = (state.settings && state.settings.theme) || 'sage';
+    let t = (state.settings && state.settings.theme) || 'noir';
+    if (!['noir', 'moss', 'paper'].includes(t)) t = 'noir';
     document.body.dataset.theme = t;
     document.querySelectorAll('[data-theme-pick]').forEach(b => b.classList.toggle('on', b.dataset.themePick === t));
     const cs = getComputedStyle(document.body), v = (n) => cs.getPropertyValue(n).trim();
