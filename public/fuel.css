@@ -765,3 +765,57 @@ footer, footer a, main > section > p.muted, .plan-controls + p.muted, #ideas-hid
 .plan-controls .btn:not(.ghost), #tab-howto > #howto > .btn { background: #F4CCD4; color: #6E1F2E; }
 .plan-controls .btn:not(.ghost):hover { background: #BFD7EA; }
 .plan-controls .seg { background: #FFF9E6; }
+
+/* =====================================================================
+   RETRO (70s) STYLE
+   ===================================================================== */
+:root { --outline: #3B2A22; --retro-font: "Fraunces", Georgia, serif; }
+
+/* type */
+.top h1 { font-family: "Shrikhand", "Fraunces", serif; font-weight: 400; font-size: 2.1rem; letter-spacing: .01em;
+  color: #FBEFC2; text-shadow: 3px 3px 0 #6E1F2E, 5px 5px 0 #B5C4A5; }
+h2, h3, .stat b, .howto-title, .plan-head h3 { font-family: var(--retro-font); font-variation-settings: "SOFT" 100; letter-spacing: -.01em; }
+h2 { font-weight: 800; font-size: 1.35rem; }
+.card h2 { text-decoration-line: underline; text-decoration-style: wavy; text-decoration-thickness: 2px; text-underline-offset: 7px; }
+.card.hello h2, .card.cheer h2 { text-decoration: none; }
+
+/* header: 70s rainbow stripes */
+.top { background: #5C3D2E; padding-bottom: 0;
+  box-shadow: 0 6px 0 #F2D98A, 0 12px 0 #EDB9C4, 0 18px 0 #B5C4A5, 0 24px 0 #6F7342; margin-bottom: 30px; }
+.tabs { gap: 8px; padding-bottom: 12px; }
+.tabs button { border: 2px solid #FBEFC2; border-radius: 999px; padding: 7px 16px; color: #FBEFC2; background: transparent; }
+.tabs button:hover { background: rgba(251,239,194,.15); }
+.tabs button.on { background: #FBEFC2; color: #6E1F2E; border-color: #FBEFC2; box-shadow: 3px 3px 0 #3B2A22; }
+.doodles svg { filter: drop-shadow(2px 2px 0 #3B2A22); }
+
+/* sticker-style cards: chunky outline + hard offset shadow */
+main .card, .plan-day { border: 2.5px solid var(--outline) !important; border-radius: 22px; box-shadow: 6px 6px 0 var(--outline); }
+.idea, .stat, .slot, .fact, .addlist li, .pbars, .amount, .steps li, .extra-col, .plan-day .slot {
+  border: 2px solid var(--outline) !important; box-shadow: 3px 3px 0 var(--outline); }
+.card.brown .idea, .card.brown .fact, .card.brown .extra-col, .groups-grid .group-card:nth-child(even) .fact,
+.groups-grid .group-card:nth-child(even) .amount { border-color: #FBEFC2 !important; box-shadow: 3px 3px 0 rgba(0,0,0,.35); }
+.fact { border-left-width: 6px !important; }
+
+/* chunky pill buttons that press down */
+.btn, .chip, .seg, .pill, .pitem, .slot .add, .linkish.btn { border: 2px solid var(--outline); }
+.btn { box-shadow: 3px 3px 0 var(--outline); transition: transform .06s, box-shadow .06s; }
+.btn:active { transform: translate(3px, 3px); box-shadow: 0 0 0 var(--outline); }
+.card.brown .btn { border-color: #FBEFC2; box-shadow: 3px 3px 0 rgba(0,0,0,.4); }
+.chip { box-shadow: 2px 2px 0 var(--outline); }
+.chip.on { box-shadow: 2px 2px 0 #6E1F2E; }
+.card.brown .chip { border-color: #FBEFC2; box-shadow: 2px 2px 0 rgba(0,0,0,.35); }
+.pill { border-width: 1.5px; }
+.seg { box-shadow: 2px 2px 0 var(--outline); }
+input[type=text], input[type=number], input[type=datetime-local], select { border: 2px solid var(--outline); border-radius: 14px; }
+.card.brown input, .card.brown select { border-color: #FBEFC2; }
+
+/* stat numbers & badges */
+.stat b { font-size: 1.9rem; font-weight: 900; }
+.badge, .extra-col .count { border: 1.5px solid var(--outline); }
+
+/* film-grain texture over everything for a printed, vintage feel */
+body::after { content: ""; position: fixed; inset: 0; pointer-events: none; z-index: 50; opacity: .13; mix-blend-mode: multiply;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='g'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.9' numOctaves='2' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 0.23 0 0 0 0 0.16 0 0 0 0 0.13 0 0 0 1 0'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23g)'/%3E%3C/svg%3E"); }
+
+/* footer text */
+footer { font-family: var(--retro-font); font-variation-settings: "SOFT" 100; }
