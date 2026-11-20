@@ -657,7 +657,7 @@
       + '<h2 style="font-size:1.6rem">' + esc(r.name) + '</h2>'
       + '<div class="meta"><span class="pill">⏱ ' + r.mins + ' min</span>'
       + '<span class="pill cal-only">≈ ' + r.cal + ' cal</span>'
-      + r.groups.map(g => '<span class="pill yes">' + GROUPS[g].emoji + ' ' + GROUPS[g].label + '</span>').join('') + '</div>'
+      + r.groups.map(g => '<span class="pill yes g-' + g + '">' + GROUPS[g].emoji + ' ' + GROUPS[g].label + '</span>').join('') + '</div>'
       + '<div class="cols"><div><h3>You\'ll need</h3><ul>' + r.ingredients.map(i => '<li>' + esc(i) + '</li>').join('') + '</ul>'
       + '<p class="tip">🌱 Feeling brave? ' + esc(r.stretch) + '</p></div>'
       + '<div><h3>Steps</h3><ol>' + r.steps.map(s => '<li>' + esc(s) + '</li>').join('') + '</ol></div></div>'
@@ -676,7 +676,7 @@
     $('#fact-date').textContent = new Date().toLocaleDateString([], { weekday: 'long', month: 'long', day: 'numeric' });
     $('#learn-grid').innerHTML = GROUP_KEYS.map(k => {
       const g = GROUPS[k], mine = likedIn(k);
-      return '<div class="card group-card"><div class="emoji" aria-hidden="true">' + g.emoji + '</div><h2>' + esc(g.label) + '</h2><p>' + esc(g.why) + '</p>'
+      return '<div class="card group-card g-' + k + '"><div class="emoji" aria-hidden="true">' + g.emoji + '</div><h2>' + esc(g.label) + '</h2><p>' + esc(g.why) + '</p>'
         + (mine.length ? '<p><b>You already like:</b> ' + esc(mine.join(', ')) + '</p>' : '<p><b>Not on your list yet.</b> Something to explore!</p>')
         + amountIcons(k) + '<p><b>Try:</b></p><ul>' + g.ideas.map(i => '<li>' + esc(i) + '</li>').join('') + '</ul>'
         + '<p class="fod">Today\'s fact</p>'
@@ -1182,7 +1182,7 @@
     $('#ideas-filter').innerHTML = groupsPresent.map(g => '<button type="button" class="chip' + (g === ideaFilter ? ' on' : '') + '" data-idea-filter="' + g + '">'
       + (g === 'all' ? 'Top picks' : ico(GROUP_ICON[g]) + ' ' + esc(GROUPS[g].label)) + '</button>').join('');
     const list = ideaFilter === 'all' ? scored.slice(0, 8) : scored.filter(x => x.g === ideaFilter);
-    $('#ideas-foods').innerHTML = list.map(x => '<div class="idea">'
+    $('#ideas-foods').innerHTML = list.map(x => '<div class="idea g-' + x.g + '">'
       + '<div class="idea-head">' + ico(GROUP_ICON[x.g], 'big') + '<div><h3>' + esc(x.n) + '</h3><span class="muted">' + esc(GROUPS[x.g].label)
       + (x.because ? ' · because you like ' + esc(x.because.toLowerCase()) : '') + '</span></div></div>'
       + '<p>📊 ' + esc(x.why) + '</p>'
@@ -1199,7 +1199,7 @@
     }).filter(x => x.hits.length).sort((a, b) => b.s - a.s).slice(0, 6);
     $('#ideas-meals').innerHTML = meals.map(({ m, adds }) => '<div class="idea meal">'
       + '<h3>' + esc(m.name) + '</h3><p class="muted">Like your ' + esc(m.likeOf) + '</p>'
-      + '<div class="meta">' + m.groups.map(g => '<span class="pill' + (adds.includes(g) ? ' yes' : '') + '">' + ico(GROUP_ICON[g]) + ' ' + esc(GROUPS[g].label) + '</span>').join('') + '</div>'
+      + '<div class="meta">' + m.groups.map(g => '<span class="pill g-' + g + (adds.includes(g) ? ' yes' : '') + '">' + ico(GROUP_ICON[g]) + ' ' + esc(GROUPS[g].label) + '</span>').join('') + '</div>'
       + '<p>' + esc(m.how) + '</p>'
       + (adds.length ? '<p class="tip">🌱 Sneaks in ' + adds.map(g => GROUPS[g].label.toLowerCase()).join(' & ') + '</p>' : '')
       + '<div class="idea-actions"><button class="btn small" data-meal-shop="' + esc(m.name) + '">🛒 Add ingredients</button>'
@@ -1375,8 +1375,8 @@
     const cap = (w) => w.charAt(0).toUpperCase() + w.slice(1);
     const card = (r) => {
       const add = r.missing.map(req => cap(req[0]));
-      return '<div class="idea dish"><div class="dish-top"><h3><button class="howto-link title" data-howto="' + esc('dish|' + r.d.name) + '">' + esc(r.d.name) + ' →</button></h3><span class="pill">' + esc(r.d.meal) + '</span></div>'
-        + '<div class="meta">' + r.d.groups.map(g => '<span class="pill">' + ico(GROUP_ICON[g]) + ' ' + esc(GROUPS[g].label) + '</span>').join('') + '</div>'
+      return '<div class="idea dish m-' + r.d.meal.toLowerCase() + '"><div class="dish-top"><h3><button class="howto-link title" data-howto="' + esc('dish|' + r.d.name) + '">' + esc(r.d.name) + ' →</button></h3><span class="pill">' + esc(r.d.meal) + '</span></div>'
+        + '<div class="meta">' + r.d.groups.map(g => '<span class="pill g-' + g + '">' + ico(GROUP_ICON[g]) + ' ' + esc(GROUPS[g].label) + '</span>').join('') + '</div>'
         + '<p>' + esc(r.d.steps) + '</p>'
         + (r.extras.length ? '<p class="muted">✓ You also have ' + esc(r.extras.join(', ')) + ' to add.</p>' : '')
         + (seasonFor(r.d.name + ' ' + r.d.steps).length ? '<p class="season">🧂 Season with your: <b>' + esc(seasonFor(r.d.name + ' ' + r.d.steps).join(', ')) + '</b></p>' : '')
@@ -1469,7 +1469,7 @@
       + '<div class="card howto-card"><p class="muted">' + ico('pan') + ' How to make it</p><h2 class="howto-title">' + esc(h.name) + '</h2>'
       + '<div class="meta">' + (h.mins !== undefined ? '<span class="pill">⏱ ' + (h.mins ? h.mins + ' min' : 'No cooking!') + '</span>' : '')
       + (h.cal ? '<span class="pill cal-only">≈ ' + h.cal + ' cal</span>' : '')
-      + h.groups.filter(g => GROUPS[g]).map(g => '<span class="pill yes">' + ico(GROUP_ICON[g]) + ' ' + esc(GROUPS[g].label) + '</span>').join('') + '</div>'
+      + h.groups.filter(g => GROUPS[g]).map(g => '<span class="pill yes g-' + g + '">' + ico(GROUP_ICON[g]) + ' ' + esc(GROUPS[g].label) + '</span>').join('') + '</div>'
       + '<div class="howto-cols"><div class="card olive inner"><h3>' + ico('cart') + ' Ingredients</h3><ul class="ing">'
       + have.map(x => '<li class="' + (x.ok ? 'ok' : x.opt ? 'opt' : 'no') + '"><span class="mark">' + (x.ok ? '✓' : x.opt ? '·' : '○') + '</span>' + esc(x.i)
         + (x.ok ? ' <em>you have it</em>' : '') + '</li>').join('') + '</ul>'
