@@ -329,3 +329,11 @@ dialog.picker::backdrop { background: rgba(80,5,14,.35); }
 
 .groc-recipes { display: grid; grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)); gap: 4px 24px; }
 .grocery.one { columns: 1; }
+
+.groc-add { margin-bottom: 8px; }
+.groc-add .row { margin-top: 0; }
+.groc-add input[type=text] { flex: 1 1 200px; }
+.grocery li { display: flex; align-items: flex-start; gap: 6px; }
+.grocery li label { flex: 1; }
+.grocery .x { font: inherit; border: 0; background: none; cursor: pointer; color: var(--on-brown-soft); font-size: 1.1rem; padding: 0 6px; }
+.grocery .x:hover { color: var(--on-brown); }

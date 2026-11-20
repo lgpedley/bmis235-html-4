@@ -806,6 +806,10 @@
     state.grocery = state.grocery || {}; const checked = state.grocery[wk] || {};
     const box = (n) => '<li><label><input type="checkbox" data-groc="' + wk + '|' + esc(n) + '"' + (checked[n] ? ' checked' : '') + '> <span>' + esc(n) + '</span></label></li>';
     let html = '';
+    state.groceryExtra = state.groceryExtra || {};
+    const mine = state.groceryExtra[wk] || [];
+    if (mine.length) html += '<h3 class="sub">Added by me</h3><ul class="grocery">' + mine.map((n, i) =>
+      box(n).replace('</label></li>', '</label><button class="x" data-groc-del="' + wk + '|' + i + '" aria-label="Remove ' + esc(n) + '">×</button></li>')).join('') + '</ul>';
     if (groc.foods.length) html += '<h3 class="sub">Everyday foods</h3><ul class="grocery">' + groc.foods.map(box).join('') + '</ul>';
     if (groc.recipes.length) html += '<div class="groc-recipes">' + groc.recipes.map(([name, ings]) =>
       '<div class="groc-recipe"><h3 class="sub">✨ ' + esc(name) + '</h3><ul class="grocery one">' + ings.map(box).join('') + '</ul></div>').join('') + '</div>';
@@ -877,6 +881,23 @@
       p.logged = p.logged || {}; p.logged[slot] = true;
       state.entries.push(entry); save(); render(); showCheer(entry);
     }
+  });
+  $('#groc-form').addEventListener('submit', (ev) => {
+    ev.preventDefault();
+    const input = $('#groc-input'), name = input.value.trim(); if (!name) return;
+    const wk = isoDate(planDays(planWeek)[0]);
+    state.groceryExtra = state.groceryExtra || {};
+    const list = state.groceryExtra[wk] = state.groceryExtra[wk] || [];
+    if (!list.some(n => n.toLowerCase() === name.toLowerCase())) list.push(name);
+    input.value = ''; save(); renderPlan(); sketchify($('#tab-plan')); input.focus();
+  });
+  document.addEventListener('click', (ev) => {
+    const d = ev.target.closest('[data-groc-del]'); if (!d) return;
+    const [wk, i] = d.dataset.grocDel.split('|');
+    const list = (state.groceryExtra || {})[wk]; if (!list) return;
+    const [gone] = list.splice(+i, 1);
+    if (state.grocery && state.grocery[wk]) delete state.grocery[wk][gone];
+    save(); renderPlan(); sketchify($('#tab-plan'));
   });
   document.addEventListener('change', (ev) => {
     const g = ev.target.closest('[data-groc]'); if (!g) return;

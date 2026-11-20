@@ -168,7 +168,14 @@
     <div id="plan-grid" class="plan-grid"></div>
     <div class="card brown">
       <h2>🛒 Shopping list</h2>
-      <p class="muted">Built from this week's plan. Check things off as you shop.</p>
+      <p class="muted">Built from this week's plan, plus anything you add. Check things off as you shop.</p>
+      <form id="groc-form" class="groc-add">
+        <label class="lbl" for="groc-input">Add to my list</label>
+        <div class="row">
+          <input type="text" id="groc-input" maxlength="60" placeholder="e.g. strawberries, paper towels, milk">
+          <button type="submit" class="btn small">+ Add</button>
+        </div>
+      </form>
       <div id="grocery"></div>
     </div>
   </section>
