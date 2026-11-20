@@ -1307,3 +1307,9 @@ body.mag[data-theme="bubblegum"] { --p-bg: #FBE4EE; }
 .sb-item .sticker-badge b { font-size: 1.25rem; }
 .sb-count { position: absolute; right: -6px; bottom: -4px; background: #1C1A14; color: #FFFBF4; font: 600 .75rem "DM Mono", monospace; padding: 2px 7px; border-radius: 999px; font-style: normal; }
 .sticker-badge { padding: 16px; } .sticker-badge span { font-size: .52rem; }
+
+.pb-fact { margin: 6px 0 4px; animation: factin .35s ease; }
+.pb-fact-lbl { font: 500 .7rem "DM Mono", monospace; text-transform: uppercase; letter-spacing: .1em; margin: 0 0 4px; }
+.pb-fact .fact { margin-top: 0; }
+@keyframes factin { from { opacity: 0; transform: translateY(6px); } }
+@media (prefers-reduced-motion: reduce) { .pb-fact { animation: none; } }

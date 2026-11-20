@@ -1699,7 +1699,37 @@
   /* ===============================================================
      PLATE OF THE WEEK: tap or drag foods onto a big plate
      =============================================================== */
-  let plateItems = [], plateAgain = false, lastAdded = null;
+  let plateItems = [], plateAgain = false, lastAdded = null, lastFact = null;
+  // a "why it's good" fact for a specific food (falls back to its food group's fact of the day)
+  const FOOD_FACTS = [
+    ['salmon', FACTS.salmon],
+    ['steak', FACTS.iron], ['beef', FACTS.iron], ['burger', FACTS.iron],
+    ['sweet potato', { text: 'One medium sweet potato has over 100% of your daily vitamin A, which helps your eyes and immune system.', src: 'NIH Office of Dietary Supplements, Vitamin A Fact Sheet' }],
+    ['potato', FACTS.potato], ['fries', FACTS.potato],
+    ['broccoli', FACTS.broccoli],
+    ['corn', { text: 'Sweet corn contains lutein and zeaxanthin, antioxidants that collect in your eyes and help protect your vision.', src: 'National Eye Institute (NIH)' }],
+    ['pickle', { text: 'Pickles are cucumbers, so they count as a veggie, and a whole spear has only about 5 calories.', src: 'USDA FoodData Central' }],
+    ['grilled cheese', { text: 'The cheese in a grilled cheese brings calcium for strong bones, and one ounce of cheddar has about 7 g of protein.', src: 'USDA FoodData Central' }],
+    ['mac', { text: 'Mac and cheese gives you carbs for energy plus calcium and protein from the cheese. A real two-food-group comfort meal.', src: 'USDA FoodData Central' }],
+    ['alfredo', { text: 'Alfredo is made with milk, butter and parmesan, so it adds calcium. Adults 19–50 need about 1,000 mg a day.', src: 'NIH Office of Dietary Supplements, Calcium Fact Sheet' }],
+    ['rosatella', { text: 'Rosatella blends tomato and cream: tomatoes bring lycopene, an antioxidant your body absorbs better when it\'s cooked with a little fat.', src: 'NIH National Library of Medicine' }],
+    ['cheese', { text: 'One ounce of cheddar cheese has about 7 g of protein, so cheese counts toward protein too.', src: 'USDA FoodData Central' }],
+    ['noodle', { text: 'A cup of cooked pasta has about 8 g of protein along with the carbs your brain runs on.', src: 'USDA FoodData Central' }],
+    ['pasta', { text: 'A cup of cooked pasta has about 8 g of protein along with the carbs your brain runs on.', src: 'USDA FoodData Central' }],
+    ['garlic', { text: 'Bread is a carb, and carbs are your brain\'s main fuel. It uses about 20% of your body\'s energy.', src: 'Institute of Medicine, Dietary Reference Intakes (2005)' }],
+    ['toast', { text: 'Toast is quick fuel: carbs are your brain\'s main energy source. Whole-wheat adds about 2 g of fiber per slice.', src: 'Institute of Medicine (2005); USDA FoodData Central' }],
+    ['bread', { text: 'Bread is a carb, and carbs are your brain\'s main fuel. It uses about 20% of your body\'s energy.', src: 'Institute of Medicine, Dietary Reference Intakes (2005)' }],
+    ['egg', { text: 'One egg has about 6 g of protein, and eggs at breakfast are linked to feeling full longer.', src: 'USDA FoodData Central' }],
+    ['strawberr', { text: 'One cup of strawberries has about 85 mg of vitamin C, more than a medium orange.', src: 'USDA FoodData Central' }],
+    ['banana', { text: 'A medium banana has about 420 mg of potassium and 3 g of fiber.', src: 'USDA FoodData Central' }],
+    ['apple', { text: 'A medium apple has about 4 g of fiber to help keep you full.', src: 'USDA FoodData Central' }],
+    ['milk', { text: 'One cup of milk has about 300 mg of calcium and 8 g of protein.', src: 'NIH Office of Dietary Supplements; USDA' }],
+    ['cheeto', { text: 'Fun foods belong on the plate too: in one study, people who were kind to themselves about a treat ate less afterward than people who felt guilty.', src: 'Adams & Leary, Journal of Social and Clinical Psychology (2007)' }]
+  ];
+  function foodFact(f) {
+    const n = f.name.toLowerCase(), hit = FOOD_FACTS.find(([k]) => n.includes(k));
+    return hit ? hit[1] : (dailyFact(f.groups[0]) || FACTS.timing);
+  }
   const ZONES = [['veg', 0, 108], ['fruit', 108, 180], ['carbs', 180, 288], ['protein', 288, 360]];
   const ZONE_LABEL = { veg: 'Veggies', fruit: 'Fruit', carbs: 'Carbs', protein: 'Protein', dairy: 'Dairy' };
   function plateNote() {
@@ -1751,6 +1781,7 @@
     box.innerHTML = '<h2>🍽 Plate of the week</h2><p class="muted">Once a week, build one meal on the plate. Tap a food, or drag it onto the plate. Each section fills as you go.</p>'
       + '<div class="pb-grid"><div class="pb-plate" id="pb-drop">' + plateSVGBig()
       + '<p class="pb-note" aria-live="polite">' + esc(plateNote()) + '</p>'
+      + (lastFact ? '<div class="pb-fact" aria-live="polite"><p class="pb-fact-lbl">Good to know: ' + esc(lastFact.name) + '</p>' + factHTML(lastFact.fact) + '</div>' : '')
       + (plateItems.length ? '<div class="pb-items">' + plateItems.map((f, i) => '<button type="button" class="pitem" data-pb-remove="' + i + '">' + esc(f.name) + ' ×</button>').join('') + '</div>'
         + '<div class="pb-actions"><button type="button" class="btn" id="pb-log">Log this plate 💛</button><button type="button" class="btn ghost inline" id="pb-clear">Start over</button></div>' : '')
       + '</div><div class="pb-tray">' + tray + '</div></div>';
@@ -1760,12 +1791,13 @@
   function plateAdd(id) {
     const f = state.foods.find(x => x.id === id); if (!f) return;
     plateItems.push({ name: f.name, groups: f.groups.slice(), cal: f.cal || 0 });
+    lastFact = { name: f.name, fact: foodFact(f) };
     lastAdded = f.groups.slice(); renderPlateBuilder();
   }
   document.addEventListener('click', (ev) => {
     const f = ev.target.closest('[data-pb-food]'); if (f) { plateAdd(f.dataset.pbFood); return; }
-    const r = ev.target.closest('[data-pb-remove]'); if (r) { plateItems.splice(+r.dataset.pbRemove, 1); renderPlateBuilder(); return; }
-    if (ev.target.closest('#pb-clear')) { plateItems = []; renderPlateBuilder(); return; }
+    const r = ev.target.closest('[data-pb-remove]'); if (r) { const [gone] = plateItems.splice(+r.dataset.pbRemove, 1); if (lastFact && gone && lastFact.name === gone.name) lastFact = null; renderPlateBuilder(); return; }
+    if (ev.target.closest('#pb-clear')) { plateItems = []; lastFact = null; renderPlateBuilder(); return; }
     if (ev.target.closest('#pb-again')) { plateAgain = true; plateItems = []; renderPlateBuilder(); return; }
     if (ev.target.closest('#pb-log')) {
       if (!plateItems.length) return;
@@ -1773,7 +1805,7 @@
       const entry = { id: uid(), ts: new Date().toISOString(), type: 'meal', plate: true, foods: plateItems.map(x => Object.assign({}, x)),
         cal: state.settings.calories ? (cal || null) : null, note: '🍽 Plate of the week' };
       state.entries.push(entry); state.plateDone = isoDate(planDays(0)[0]);
-      plateItems = []; plateAgain = false; save(); render(); showCheer(entry);
+      plateItems = []; lastFact = null; plateAgain = false; save(); render(); showCheer(entry);
     }
   });
   document.addEventListener('dragstart', (ev) => { const f = ev.target.closest && ev.target.closest('[data-pb-food]'); if (f) ev.dataTransfer.setData('text/plain', f.dataset.pbFood); });
