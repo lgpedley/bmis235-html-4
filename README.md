@@ -9,3 +9,5 @@ Plain HTML, CSS and JavaScript with no build step. Data is saved only in your br
 - `public/fuel.js`: logging, encouragement, charts, recipes
 
 Hosted on Cloudflare Workers; `wrangler.jsonc` tells it to serve the `public/` folder.
+
+Live at https://bms235-html-4.lpedley.workers.dev
