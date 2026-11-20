@@ -84,6 +84,65 @@
   };
   const GROUP_KEYS = Object.keys(GROUPS);
 
+  // Daily amounts for a 2,000-calorie pattern (Dietary Guidelines for Americans, 2020–2025)
+  const DAILY = {
+    carbs:   { n: 6, unit: 'oz-equivalents of grains (1 slice of bread or ½ cup pasta = 1)' },
+    protein: { n: 5.5, unit: 'oz-equivalents of protein (1 oz of fish or meat = 1)' },
+    veg:     { n: 2.5, unit: 'cups of vegetables' },
+    fruit:   { n: 2, unit: 'cups of fruit' },
+    dairy:   { n: 3, unit: 'cups of dairy (1½ oz of cheese = 1 cup)' }
+  };
+
+  /* ---------------------------------------------------------------
+     A new fact for each food group every day (rotates by date)
+     --------------------------------------------------------------- */
+  const GROUP_FACTS = {
+    carbs: [
+      FACTS.brain,
+      { text: 'Experts recommend that 45–65% of your daily calories come from carbohydrates. They\'re meant to be the biggest part of your plate.', src: 'Institute of Medicine, Acceptable Macronutrient Distribution Ranges (2005)' },
+      { text: 'Your muscles store carbs as glycogen, their main fuel for walking, working out and getting through a busy day.', src: 'Thomas, Erdman & Burke, Academy of Nutrition and Dietetics / ACSM position paper (2016)' },
+      FACTS.potato,
+      { text: 'The Dietary Guidelines suggest making at least half your grains whole grains. Whole-wheat toast is an easy swap.', src: 'Dietary Guidelines for Americans, 2020–2025' }
+    ],
+    protein: [
+      FACTS.protein,
+      FACTS.breakfast,
+      { text: 'Adults need about 0.8 g of protein per kilogram of body weight each day, roughly 55 g for someone who weighs 150 lb.', src: 'Institute of Medicine, Dietary Reference Intakes (2005)' },
+      { text: 'A 4-oz piece of cooked salmon has roughly 25–30 g of protein, about a full meal\'s worth.', src: 'USDA FoodData Central' },
+      { text: 'Your body uses about 20–30% of protein\'s calories just to digest it, more than for carbs or fat, which is part of why it keeps you full.', src: 'Westerterp, Nutrition & Metabolism (2004)' },
+      FACTS.iron
+    ],
+    veg: [
+      FACTS.veg,
+      FACTS.broccoli,
+      { text: 'A review of 95 studies found that eating about 800 g of fruits and vegetables a day (around 10 servings) was linked to lower risk of heart disease, stroke and early death.', src: 'Aune et al., International Journal of Epidemiology (2017)' },
+      FACTS.fiber,
+      { text: 'Sweet corn contains lutein and zeaxanthin, antioxidants that collect in your eyes and help protect your vision.', src: 'National Eye Institute (NIH)' }
+    ],
+    fruit: [
+      FACTS.fruit,
+      { text: 'One cup of strawberries has about 85 mg of vitamin C, more than a medium orange.', src: 'USDA FoodData Central' },
+      { text: 'A medium banana has about 420 mg of potassium and 3 g of fiber, an easy grab-and-go breakfast.', src: 'USDA FoodData Central' },
+      { text: 'The Dietary Guidelines recommend getting most of your fruit from whole fruit instead of juice, because the fiber keeps you full.', src: 'Dietary Guidelines for Americans, 2020–2025' },
+      { text: 'A review of 95 studies found that eating more fruits and vegetables was linked to lower risk of heart disease, stroke and early death.', src: 'Aune et al., International Journal of Epidemiology (2017)' }
+    ],
+    dairy: [
+      FACTS.dairy,
+      { text: 'Adults 19–50 need about 1,000 mg of calcium a day. One cup of milk has about 300 mg, nearly a third.', src: 'NIH Office of Dietary Supplements, Calcium Fact Sheet' },
+      { text: 'Most people reach their peak bone mass by around age 30, so calcium in your 20s builds your "bone bank" for life.', src: 'NIH Osteoporosis and Related Bone Diseases National Resource Center' },
+      { text: 'One ounce of cheddar cheese has about 7 g of protein, so cheese counts toward protein too.', src: 'USDA FoodData Central' }
+    ],
+    fun: [
+      { text: 'In a 2007 study, people who were encouraged to be kind to themselves after eating a treat ate less afterward than people who weren\'t. Guilt doesn\'t help; kindness does.', src: 'Adams & Leary, Journal of Social and Clinical Psychology (2007)' },
+      FACTS.timing
+    ]
+  };
+  function dayIndex() { const d = new Date(); return Math.floor((new Date(d.getFullYear(), d.getMonth(), d.getDate()) - new Date(2020, 0, 1)) / 864e5); }
+  function dailyFact(group) {
+    const pool = GROUP_FACTS[group];
+    return pool ? pool[(dayIndex() + GROUP_KEYS.indexOf(group) * 2) % pool.length] : null;
+  }
+
   const DEFAULT_FOODS = [
     ['Toast', ['carbs'], 80], ['Garlic bread', ['carbs'], 150], ['Pickles', ['veg'], 5],
     ['Hot Cheetos', ['fun'], 170], ['Mac and cheese', ['carbs', 'dairy'], 380], ['Pasta', ['carbs'], 220],
@@ -179,7 +238,7 @@
   function hasFood(entry, word) { return entry.foods.some(f => f.name.toLowerCase().includes(word)); }
   function likedIn(group) { return state.foods.filter(f => f.groups.includes(group)).map(f => f.name); }
   function factHTML(key) {
-    const f = FACTS[key]; if (!f) return '';
+    const f = typeof key === 'string' ? FACTS[key] : key; if (!f) return '';
     return '<p class="fact">📊 ' + esc(f.text) + '<span class="src">Source: ' + esc(f.src) + '</span></p>';
   }
   function suggestFrom(group) {
@@ -232,13 +291,25 @@
       head = 'Meal logged! 🎉'; body = 'You took care of yourself. That\'s worth celebrating.'; fact = 'timing';
     }
 
-    if (!tip) {
-      if (!groups.has('protein')) tip = 'Maybe try adding some protein next time, like ' + suggestFrom('protein') + '. It helps the energy last longer.';
-      else if (!groups.has('veg')) tip = 'Next time, a side of ' + suggestFrom('veg') + ' would round it out nicely.';
-      else if (entry.type === 'snack') tip = 'Pairing a snack with protein keeps you satisfied longer.';
-    }
+    return '<h2>' + esc(head) + '</h2><p>' + esc(body) + '</p>' + factHTML(fact) + (tip ? '<p class="tip">💡 ' + esc(tip) + '</p>' : '')
+      + roundOutHTML(entry);
+  }
 
-    return '<h2>' + esc(head) + '</h2><p>' + esc(body) + '</p>' + factHTML(fact) + (tip ? '<p class="tip">💡 ' + esc(tip) + '</p>' : '');
+  /* What to add next, and why, shown right after logging */
+  function roundOutHTML(entry) {
+    const have = groupsOf(entry);
+    const missing = ['protein', 'veg', 'fruit', 'dairy', 'carbs'].filter(g => !have.has(g)).slice(0, entry.type === 'snack' ? 2 : 3);
+    const levels = {}; GROUP_KEYS.forEach(g => levels[g] = have.has(g) ? 1 : 0);
+    let s = '<div class="roundout"><div class="plate-wrap">' + plateSVG(levels) + '<p class="cap">This ' + entry.type + '\'s plate</p></div><div class="roundout-body">';
+    if (!missing.length) return s + '<h3>🌈 Every food group in one go. Beautifully balanced!</h3></div></div>';
+    s += '<h3>To round out your next ' + entry.type + ', try adding:</h3><ul class="addlist">';
+    s += missing.map(g => {
+      const G = GROUPS[g], f = dailyFact(g), mine = likedIn(g);
+      return '<li><span class="ic" aria-hidden="true">' + G.emoji + '</span><div><b>' + esc(G.label) + ':</b> ' + esc(G.why)
+        + '<span class="try">Try: ' + esc(mine.length ? mine.slice(0, 3).join(', ') : G.ideas[0]) + '</span>'
+        + (f ? '<span class="mini-fact">📊 ' + esc(f.text) + ' <i>(' + esc(f.src) + ')</i></span>' : '') + '</div></li>';
+    }).join('');
+    return s + '</ul></div></div>';
   }
 
   /* ---------------------------------------------------------------
@@ -261,7 +332,7 @@
     let extra = '';
     if (missing.length) {
       const g = missing[0];
-      extra = '<p class="tip">💡 Still room today for ' + GROUPS[g].label.toLowerCase() + ', maybe ' + esc(suggestFrom(g)) + '?</p>' + factHTML(GROUPS[g].fact);
+      extra = '<p class="tip">💡 Still room today for ' + GROUPS[g].label.toLowerCase() + ', maybe ' + esc(suggestFrom(g)) + '?</p>' + factHTML(dailyFact(g));
     } else {
       extra = '<p class="tip">🌈 Protein, veggies AND fruit today. That\'s a beautifully balanced day.</p>';
     }
@@ -293,7 +364,7 @@
      Charts (inline SVG)
      --------------------------------------------------------------- */
   const SVGNS = 'http://www.w3.org/2000/svg';
-  const C = { meal: '#724319', snack: '#D88180', grid: '#EED3A8', band: '#FEEAC7', bar: '#D88180', goal: '#724319' };
+  const C = { meal: '#43302E', snack: '#C1DBE8', grid: '#E9DB9C', band: '#FFF1B5', bar: '#6F9DB5', goal: '#43302E', card: '#FFFBEA', empty: '#FFF7D6' };
 
   // Timeline: rows of days, x = hour of day
   function scheduleSVG(days, rowLabels) {
@@ -316,8 +387,8 @@
         const tipTxt = (e.type === 'meal' ? 'Meal' : 'Snack') + ' · ' + fmtTime(e.ts) + ' · ' + e.foods.map(f => f.name).join(', ');
         const cx = x(hourOf(e.ts));
         const mark = e.type === 'meal'
-          ? '<circle cx="' + cx + '" cy="' + cy + '" r="7" fill="' + C.meal + '" stroke="#FFF6E6" stroke-width="2"/>'
-          : '<circle cx="' + cx + '" cy="' + cy + '" r="6" fill="#fff" stroke="' + C.snack + '" stroke-width="3"/>';
+          ? '<circle cx="' + cx + '" cy="' + cy + '" r="7" fill="' + C.meal + '" stroke="' + C.card + '" stroke-width="2"/>'
+          : '<circle cx="' + cx + '" cy="' + cy + '" r="7" fill="' + C.snack + '" stroke="' + C.meal + '" stroke-width="2"/>';
         s += '<g class="hit" data-tip="' + esc(tipTxt) + '">' + mark + '<circle cx="' + cx + '" cy="' + cy + '" r="14" fill="transparent"/></g>';
       });
     });
@@ -343,6 +414,36 @@
       const tipTxt = g.label + ': ' + v + ' this week' + (g.goal ? ' (gentle goal: ' + g.goal + ')' : '');
       s += '<rect class="hit" data-tip="' + esc(tipTxt) + '" x="0" y="' + (top + rowH * i) + '" width="' + W + '" height="' + rowH + '" fill="transparent"/>';
     });
+    return s + '</svg>';
+  }
+
+  // Plate graphic. levels: { group: 0..1 }, labels: optional { group: text }
+  function mix(a, b, t) {
+    const pa = a.match(/\w\w/g).map(h => parseInt(h, 16)), pb = b.match(/\w\w/g).map(h => parseInt(h, 16));
+    return '#' + pa.map((v, i) => Math.round(v + (pb[i] - v) * t).toString(16).padStart(2, '0')).join('');
+  }
+  function plateSVG(levels, labels) {
+    const cx = 112, cy = 116, R = 88;
+    const pt = (a, r) => [cx + r * Math.cos((a - 90) * Math.PI / 180), cy + r * Math.sin((a - 90) * Math.PI / 180)];
+    const wedge = (a0, a1) => { const [x0, y0] = pt(a0, R), [x1, y1] = pt(a1, R);
+      return 'M' + cx + ' ' + cy + ' L' + x0.toFixed(1) + ' ' + y0.toFixed(1) + ' A' + R + ' ' + R + ' 0 ' + (a1 - a0 > 180 ? 1 : 0) + ' 1 ' + x1.toFixed(1) + ' ' + y1.toFixed(1) + ' Z'; };
+    // MyPlate layout: veggies + fruit on one half, grains + protein on the other
+    const parts = [['veg', 0, 108], ['fruit', 108, 180], ['carbs', 180, 288], ['protein', 288, 360]];
+    let s = '<svg class="chart plate" viewBox="0 0 262 232" role="img" aria-label="Plate showing food groups">';
+    s += '<circle cx="' + cx + '" cy="' + cy + '" r="' + (R + 14) + '" fill="#FFFFFF" stroke="' + C.grid + '" stroke-width="2"/>';
+    const fill = (v) => v > 0 ? mix('#E3EFF5', '#86B0C5', Math.min(1, v)) : C.empty;
+    const node = (g, x, y, shape) => {
+      const v = levels[g] || 0, G = GROUPS[g], on = v > 0;
+      const tip = G.label + (labels && labels[g] ? ': ' + labels[g] : on ? ': yes!' : ': not yet');
+      return '<g class="hit" data-tip="' + esc(tip) + '">' + shape(fill(v), on)
+        + '<text x="' + x + '" y="' + (y + 2) + '" class="pemo" text-anchor="middle" opacity="' + (on ? 1 : .4) + '">' + G.emoji + '</text>'
+        + '<text class="plab" x="' + x + '" y="' + (y + 22) + '" text-anchor="middle">' + esc(labels && labels[g] ? labels[g] : G.label.split(' ')[0]) + '</text></g>';
+    };
+    parts.forEach(([g, a0, a1]) => {
+      const [lx, ly] = pt((a0 + a1) / 2, R * 0.58);
+      s += node(g, lx, ly, (f, on) => '<path d="' + wedge(a0, a1) + '" fill="' + f + '" stroke="' + (on ? C.card : C.grid) + '" stroke-width="3"' + (on ? '' : ' stroke-dasharray="5 4"') + '/>');
+    });
+    s += node('dairy', 230, 40, (f, on) => '<circle cx="230" cy="36" r="29" fill="' + f + '" stroke="' + (on ? C.meal : C.grid) + '" stroke-width="2"' + (on ? '' : ' stroke-dasharray="5 4"') + '/>');
     return s + '</svg>';
   }
 
@@ -409,6 +510,8 @@
     if (state.settings.calories) stats += '<div class="stat"><b>' + (cal || 0) + '</b><span>≈ calories</span></div>';
     $('#today-stats').innerHTML = stats;
     $('#today-timeline').innerHTML = scheduleSVG([new Date()], false);
+    const todayLv = {}; day.forEach(e => groupsOf(e).forEach(g => todayLv[g] = 1));
+    $('#today-plate').innerHTML = plateSVG(todayLv);
     $('#today-list').innerHTML = day.map(entryRow).join('') || '<li class="muted">Nothing yet, and that\'s okay.</li>';
   }
 
@@ -419,6 +522,9 @@
 
     const counts = {}; GROUP_KEYS.forEach(k => counts[k] = 0);
     days.forEach(d => entriesOn(d).forEach(e => groupsOf(e).forEach(g => { if (g in counts) counts[g]++; })));
+    const wkLv = {}, wkLab = {};
+    GROUP_KEYS.forEach(k => { if (GROUPS[k].goal) { wkLv[k] = counts[k] / GROUPS[k].goal; wkLab[k] = counts[k] + '/' + GROUPS[k].goal; } });
+    $('#week-plate').innerHTML = plateSVG(wkLv, wkLab);
     $('#week-groups').innerHTML = groupBarsSVG(counts)
       + '<p class="muted" style="margin-top:8px">The thin dark line on each bar is a gentle weekly goal, not a rule. Hover a bar for details.</p>';
 
@@ -428,7 +534,7 @@
     const mine = likedIn(need);
     $('#week-try').innerHTML = '<div class="card hello" style="margin:16px 0 0"><h2>' + g.emoji + ' One to add more of: ' + esc(g.label) + '</h2><p>' + esc(g.why) + '</p>'
       + (mine.length ? '<p><b>From your list:</b> ' + esc(mine.join(', ')) + '</p>' : '')
-      + '<p><b>Easy ideas:</b> ' + esc(g.ideas.join(' · ')) + '</p>' + factHTML(g.fact) + '</div>';
+      + '<p><b>Easy ideas:</b> ' + esc(g.ideas.join(' · ')) + '</p>' + factHTML(dailyFact(need)) + '</div>';
 
     // History, newest first, last 14 days
     const byDay = {};
@@ -466,13 +572,22 @@
       + (pool.length > 1 ? '<button type="button" class="btn" id="next-recipe">Not feeling it? Show me another</button>' : '');
   }
 
+  function amountIcons(k) {
+    const d = DAILY[k]; if (!d) return '';
+    let icons = ''; for (let i = 0; i < Math.ceil(d.n); i++) icons += '<span class="amt' + (d.n - i < 1 ? ' half' : '') + '">' + GROUPS[k].emoji + '</span>';
+    return '<div class="amount"><div class="icons" aria-hidden="true">' + icons + '</div><span class="muted">About <b>' + d.n + '</b> ' + esc(d.unit) + ' a day</span></div>';
+  }
   function renderLearn() {
+    const full = {}; GROUP_KEYS.forEach(k => full[k] = 1);
+    $('#learn-plate').innerHTML = plateSVG(full);
+    $('#fact-date').textContent = new Date().toLocaleDateString([], { weekday: 'long', month: 'long', day: 'numeric' });
     $('#learn-grid').innerHTML = GROUP_KEYS.map(k => {
       const g = GROUPS[k], mine = likedIn(k);
       return '<div class="card group-card"><div class="emoji" aria-hidden="true">' + g.emoji + '</div><h2>' + esc(g.label) + '</h2><p>' + esc(g.why) + '</p>'
         + (mine.length ? '<p><b>You already like:</b> ' + esc(mine.join(', ')) + '</p>' : '<p><b>Not on your list yet.</b> Something to explore!</p>')
-        + '<p><b>Try:</b></p><ul>' + g.ideas.map(i => '<li>' + esc(i) + '</li>').join('') + '</ul>'
-        + (g.fact ? factHTML(g.fact) : '') + '</div>';
+        + amountIcons(k) + '<p><b>Try:</b></p><ul>' + g.ideas.map(i => '<li>' + esc(i) + '</li>').join('') + '</ul>'
+        + '<p class="fod">Today\'s fact</p>'
+        + factHTML(dailyFact(k)) + '</div>';
     }).join('');
   }
 

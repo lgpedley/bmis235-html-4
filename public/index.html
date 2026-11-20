@@ -82,6 +82,9 @@
         <div class="card">
           <h2>Today so far</h2>
           <div class="stats" id="today-stats"></div>
+          <h3 class="sub">Today's plate</h3>
+          <div class="plate-row"><div id="today-plate" class="plate-box"></div>
+            <p class="muted">Each food group you eat today fills in a section. Hover or tap a section to see it.</p></div>
           <h3 class="sub">Today's timeline</h3>
           <div id="today-timeline"></div>
           <ul class="entries" id="today-list"></ul>
@@ -102,6 +105,8 @@
     <div class="card">
       <h2>Food groups this week</h2>
       <p class="muted">How many times each group showed up in the last 7 days, next to a gentle weekly goal.</p>
+      <div class="plate-row"><div id="week-plate" class="plate-box"></div>
+        <p class="muted">Your week as one plate. The darker the blue, the closer that group is to its weekly goal.</p></div>
       <div id="week-groups"></div>
       <div id="week-try"></div>
     </div>
@@ -119,8 +124,14 @@
   <!-- ================= LEARN ================= -->
   <section id="tab-learn" class="panel">
     <div class="card hello">
-      <h2>Why each food group matters</h2>
-      <p>No food is "bad." Each group does a different job. Here's what each one does for you, and easy ways to add it using foods you already like.</p>
+      <div class="plate-row">
+        <div id="learn-plate" class="plate-box"></div>
+        <div>
+          <h2>Why each food group matters</h2>
+          <p>No food is "bad." Each group does a different job. A balanced plate is about <b>half veggies and fruit</b>, <b>a quarter carbs</b>, <b>a quarter protein</b>, with <b>dairy on the side</b> (USDA MyPlate).</p>
+          <p class="muted">📅 New facts every day. Today's are for <b id="fact-date"></b>.</p>
+        </div>
+      </div>
     </div>
     <div class="groups-grid" id="learn-grid"></div>
   </section>

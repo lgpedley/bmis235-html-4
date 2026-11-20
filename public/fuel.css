@@ -1,19 +1,29 @@
 /* =====================================================================
    Fuel Up · styles
-   Palette: #724319 brown · #D88180 rose · #F7B1B0 blush · #FEEAC7 cream · #CAD182 sage
+   Palette: #FFF1B5 Buttermilk · #C1DBE8 Pastel Blue · #43302E Old Burgundy
    ===================================================================== */
 :root {
-  --brown: #724319;
-  --rose: #D88180;
-  --blush: #F7B1B0;
-  --cream: #FEEAC7;
-  --sage: #CAD182;
+  --burgundy: #43302E;     /* Old Burgundy */
+  --blue: #C1DBE8;         /* Pastel Blue */
+  --butter: #FFF1B5;       /* Buttermilk */
 
-  --bg: var(--cream);
-  --card: #FFF6E6;          /* a lighter cream for cards */
-  --ink: var(--brown);
-  --ink-soft: #8A5A35;
-  --line: #EED3A8;
+  /* lighter / deeper steps of the three brand colors */
+  --butter-light: #FFFBEA;
+  --blue-light: #E3EFF5;
+  --blue-deep: #6F9DB5;
+
+  /* old names kept so the rest of the file still works */
+  --brown: var(--burgundy);
+  --rose: var(--blue-deep);
+  --blush: var(--blue);
+  --cream: var(--butter);
+  --sage: var(--blue);
+
+  --bg: var(--butter);
+  --card: var(--butter-light);
+  --ink: var(--burgundy);
+  --ink-soft: #6E5754;
+  --line: #E9DB9C;
   --radius: 18px;
 }
 
@@ -43,7 +53,7 @@ a { color: var(--brown); font-weight: 700; }
 .brand { display: flex; gap: 12px; align-items: center; max-width: 1100px; margin: 0 auto; }
 .logo { font-size: 2.2rem; }
 .top h1 { font-size: 1.7rem; font-weight: 800; margin: 0; }
-.tagline { margin: 0; color: var(--blush); }
+.tagline { margin: 0; color: var(--blue); }
 .tabs {
   display: flex; gap: 4px; overflow-x: auto;
   max-width: 1100px; margin: 14px auto 0;
@@ -53,7 +63,7 @@ a { color: var(--brown); font-weight: 700; }
   padding: 10px 16px; border-radius: 14px 14px 0 0;
   background: transparent; color: var(--cream); white-space: nowrap;
 }
-.tabs button:hover { background: rgba(254,234,199,.12); }
+.tabs button:hover { background: rgba(255,241,181,.14); }
 .tabs button.on { background: var(--bg); color: var(--brown); }
 
 main { max-width: 1100px; margin: 0 auto; padding: 20px 16px 10px; }
@@ -68,8 +78,8 @@ main { max-width: 1100px; margin: 0 auto; padding: 20px 16px 10px; }
   padding: 20px;
   margin-bottom: 18px;
 }
-.card.hello { background: var(--blush); border-color: var(--rose); }
-.card.cheer { background: var(--sage); border-color: #B3BB6A; }
+.card.hello { background: var(--blue); border-color: #A3C6D8; }
+.card.cheer { background: var(--blue-light); border-color: var(--blue-deep); }
 .grid2 { display: grid; grid-template-columns: 1fr 1fr; gap: 18px; align-items: start; }
 @media (max-width: 800px) { .grid2 { grid-template-columns: 1fr; } }
 
@@ -91,9 +101,9 @@ input:focus, select:focus, button:focus-visible { outline: 3px solid var(--rose)
   background: var(--brown); color: var(--cream);
   border: 0; border-radius: 999px; padding: 12px 22px; margin-top: 16px;
 }
-.btn:hover { background: #5C3513; }
+.btn:hover { background: #2E201F; }
 .btn.small { padding: 8px 14px; margin-top: 0; }
-.btn.ghost { background: transparent; color: var(--brown); border: 2px solid var(--rose); display: block; margin-top: 10px; }
+.btn.ghost { background: transparent; color: var(--brown); border: 2px solid var(--burgundy); display: block; margin-top: 10px; }
 .btn.ghost:hover { background: var(--blush); }
 
 .seg { display: inline-flex; background: var(--cream); border: 2px solid var(--line); border-radius: 999px; padding: 3px; }
@@ -101,7 +111,7 @@ input:focus, select:focus, button:focus-visible { outline: 3px solid var(--rose)
   font: inherit; font-weight: 700; border: 0; cursor: pointer;
   padding: 6px 18px; border-radius: 999px; background: transparent; color: var(--brown);
 }
-.seg button.on { background: var(--rose); color: #3E220A; }
+.seg button.on { background: var(--burgundy); color: var(--butter); }
 
 .chips { display: flex; flex-wrap: wrap; gap: 8px; }
 .chip {
@@ -110,7 +120,7 @@ input:focus, select:focus, button:focus-visible { outline: 3px solid var(--rose)
   padding: 6px 12px; border-radius: 999px;
 }
 .chip:hover { border-color: var(--rose); }
-.chip.on { background: var(--blush); border-color: var(--rose); font-weight: 700; }
+.chip.on { background: var(--blue); border-color: var(--burgundy); font-weight: 700; }
 .chip .x { margin-left: 6px; }
 
 details.other { margin-top: 12px; }
@@ -149,9 +159,9 @@ body.no-cal .cal-only { display: none !important; }
 .entries .what { flex: 1; }
 .entries .tag {
   display: inline-block; font-size: .75rem; font-weight: 700; padding: 1px 8px; border-radius: 999px;
-  background: var(--sage); margin-right: 4px;
+  background: var(--burgundy); color: var(--butter); margin-right: 4px;
 }
-.entries .tag.snack { background: var(--blush); }
+.entries .tag.snack { background: var(--blue); color: var(--burgundy); }
 .del { font: inherit; border: 0; background: none; cursor: pointer; color: var(--ink-soft); font-size: 1.1rem; padding: 0 4px; }
 .del:hover { color: var(--brown); }
 
@@ -165,7 +175,7 @@ body.no-cal .cal-only { display: none !important; }
 .legend span { display: inline-flex; align-items: center; gap: 6px; }
 .dot { width: 12px; height: 12px; border-radius: 50%; display: inline-block; }
 .dot.meal { background: var(--brown); }
-.dot.snack { background: #fff; border: 3px solid var(--rose); }
+.dot.snack { background: var(--blue); border: 2px solid var(--burgundy); }
 
 .tooltip {
   position: fixed; z-index: 10; pointer-events: none;
@@ -187,10 +197,31 @@ body.no-cal .cal-only { display: none !important; }
 /* ---------- recipe ---------- */
 .recipe .meta { display: flex; flex-wrap: wrap; gap: 8px; margin: 8px 0 14px; }
 .pill { background: var(--cream); border-radius: 999px; padding: 4px 12px; font-weight: 700; font-size: .9rem; }
-.pill.yes { background: var(--sage); }
+.pill.yes { background: var(--blue); }
 .recipe ol, .recipe ul { padding-left: 22px; }
 .recipe li { margin-bottom: 6px; }
 .recipe .cols { display: grid; grid-template-columns: 1fr 1.4fr; gap: 24px; }
 @media (max-width: 700px) { .recipe .cols { grid-template-columns: 1fr; } }
 
 footer { max-width: 1100px; margin: 0 auto; padding: 10px 16px 40px; font-size: .9rem; color: var(--ink-soft); }
+
+/* ---------- plate graphic & round-out ---------- */
+.plate-row { display: flex; gap: 18px; align-items: center; flex-wrap: wrap; }
+.plate-box { flex: 0 0 auto; width: 230px; max-width: 100%; }
+.plate-row > :last-child { flex: 1 1 220px; }
+.chart.plate .plab { font-size: 11px; font-weight: 700; fill: var(--ink); }
+.roundout { display: flex; gap: 16px; align-items: flex-start; flex-wrap: wrap; margin-top: 16px; padding-top: 14px; border-top: 2px dashed var(--blue-deep); }
+.roundout .plate-wrap { width: 170px; flex: 0 0 auto; }
+.roundout .cap { text-align: center; font-size: .85rem; font-weight: 700; margin: 4px 0 0; }
+.roundout-body { flex: 1 1 240px; }
+.roundout h3 { margin-top: 0; }
+.addlist { list-style: none; padding: 0; margin: 0; }
+.addlist li { display: flex; gap: 10px; background: rgba(255,255,255,.7); border-radius: 12px; padding: 10px 12px; margin-bottom: 8px; }
+.addlist .ic { font-size: 1.6rem; line-height: 1; }
+.addlist .try { display: block; font-weight: 700; margin-top: 4px; }
+.mini-fact { display: block; font-size: .85rem; margin-top: 4px; color: var(--ink-soft); }
+.amount { background: var(--butter); border-radius: 12px; padding: 8px 12px; margin: 8px 0; }
+.amount .icons { font-size: 1.3rem; letter-spacing: 2px; }
+.amount .amt.half { opacity: .35; }
+.fod { margin: 12px 0 -4px; font-weight: 800; font-size: .8rem; text-transform: uppercase; letter-spacing: .06em; color: var(--ink-soft); }
+.chart.plate .pemo { font-size: 26px; fill: initial; }
