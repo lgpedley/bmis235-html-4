@@ -392,3 +392,4 @@ dialog.picker::backdrop { background: rgba(80,5,14,.35); }
 .card.brown .tag.meal { background: var(--olive-mid); color: var(--garnet); }
 .seg { border-color: var(--olive-line); }
 .badge { background: var(--olive); }
+.pitem.try { background: transparent; border-style: dashed; border-color: var(--olive); }

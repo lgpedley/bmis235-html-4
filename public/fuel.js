@@ -732,30 +732,78 @@
   }
 
   // Auto-fill: a balanced-ish plan built only from foods you like
+  // Which foods make sense for which meal (matched against food names)
+  const FIT = {
+    breakfast: ['toast', 'egg', 'bagel', 'english muffin', 'waffle', 'pancake', 'oat', 'cereal', 'granola', 'muffin',
+                'banana', 'berr', 'apple', 'grape', 'clementine', 'orange', 'melon', 'peanut butter', 'milk', 'smoothie', 'hash brown'],
+    breakfastBase: ['toast', 'bagel', 'english muffin', 'waffle', 'pancake', 'oat', 'cereal', 'granola', 'muffin'],
+    lunchMain: ['grilled cheese', 'mac', 'sandwich', 'melt', 'burger', 'quesadilla', 'butter noodle', 'pasta', 'soup', 'wrap', 'pizza', 'tuna', 'salmon'],
+    side: ['broccoli', 'corn', 'pickle', 'fries', 'potato', 'carrot', 'cucumber', 'green bean', 'pea', 'apple', 'grape', 'berr', 'banana', 'clementine'],
+    snack: ['pickle', 'cheeto', 'chip', 'cracker', 'pretzel', 'popcorn', 'string cheese', 'carrot', 'cucumber',
+            'apple', 'grape', 'berr', 'banana', 'clementine', 'orange', 'melon', 'peanut butter']
+  };
+  const fits = (f, words) => words.some(w => f.name.toLowerCase().includes(w));
+  // sides that go with each kind of lunch main
+  const LUNCH_SIDES = [
+    [['grilled cheese', 'burger', 'melt', 'sandwich', 'quesadilla', 'tuna', 'wrap'], ['pickle', 'fries', 'corn', 'apple', 'carrot', 'cucumber', 'grape', 'berr']],
+    [['pasta', 'noodle', 'mac', 'pizza', 'soup'], ['broccoli', 'corn', 'pea', 'green bean', 'carrot', 'spinach', 'cauliflower']],
+    [['salmon', 'steak', 'beef', 'shrimp', 'cod'], ['broccoli', 'corn', 'potato', 'green bean', 'pea', 'carrot']]
+  ];
+  // breakfast-friendly foods to suggest trying when your list doesn't have one yet
+  const BREAKFAST_TRY = [['Eggs', 'protein'], ['Banana', 'fruit'], ['Strawberries', 'fruit'], ['Peanut butter', 'protein'], ['Milk', 'dairy']];
+
+  // Auto-fill: replaces only slots that are empty or were auto-filled before; never touches what you added yourself
   function autofill(days) {
     const solo = (f) => !/sauce/i.test(f.name);   // sauces go on things; never planned on their own
-    const by = (g) => state.foods.filter(f => f.groups.includes(g) && solo(f));
-    const prefer = (list, words) => list.filter(f => words.some(w => f.name.toLowerCase().includes(w)));
-    const breakfastBase = prefer(by('carbs'), ['toast', 'bread', 'grilled cheese']).concat(by('carbs')).slice(0, 4);
-    const breakfastSide = by('fruit').concat(by('protein'));
-    const lunchPref = prefer(state.foods.filter(solo), ['grilled cheese', 'mac', 'butter noodle', 'fries', 'potato']);
-    const lunchMain = lunchPref.length ? lunchPref : by('carbs');
-    const veg = by('veg').filter(f => !/pickle/i.test(f.name)).concat(by('veg'));
-    const snacks = by('fruit').concat(by('veg').filter(f => !/potato|fries/i.test(f.name)), by('fun'));
+    const foods = state.foods.filter(solo);
+    const pick = (words) => foods.filter(f => fits(f, words));
+    const bBase = pick(FIT.breakfastBase);
+    const bSide = pick(FIT.breakfast).filter(f => !fits(f, FIT.breakfastBase));
+    const hiddenIdeas = state.hiddenIdeas || [];
+    const bTry = BREAKFAST_TRY.filter(([n]) => !hiddenIdeas.some(h => h.toLowerCase().startsWith(n.toLowerCase().slice(0, 5))))
+      .map(([n, g]) => ({ kind: 'try', name: n, groups: [g], cal: 0, auto: true }));
+    const lMain = pick(FIT.lunchMain).filter(f => !/steak/i.test(f.name));
+    const sides = pick(FIT.side);
+    const snacks = pick(FIT.snack);
     const recipes = eligibleRecipes();
-    const at = (arr, i) => arr.length ? arr[i % arr.length] : null;
+    const prot = foods.filter(f => f.groups.includes('protein')), veg = foods.filter(f => f.groups.includes('veg') && !/pickle/i.test(f.name));
+    state.fillSeed = (state.fillSeed || 0) + 1;
+    const seed = state.fillSeed;
+    const at = (arr, i) => arr.length ? arr[((i + seed) % arr.length + arr.length) % arr.length] : null;
+    const auto = (f) => Object.assign(foodItem(f), { auto: true });
+    const replaceable = (items) => !items.length || items.every(it => it.auto);
     days.forEach((d, i) => {
       const p = dayPlan(isoDate(d));
-      if (!p.breakfast.length) { [at(breakfastBase, i), at(breakfastSide, i)].forEach(f => f && p.breakfast.push(foodItem(f))); }
-      if (!p.lunch.length) { [at(lunchMain, i), at(veg, i + 1)].forEach(f => f && p.lunch.push(foodItem(f))); }
-      if (!p.dinner.length) { const r = at(recipes, i + weekNumber()); if (r) p.dinner.push(recipeItem(r)); }
-      if (!p.snack.length) { const f = at(snacks, i); if (f) p.snack.push(foodItem(f)); }
+      if (replaceable(p.breakfast)) {
+        const base = at(bBase, i), side = at(bSide, i);
+        p.breakfast = [base, side].filter(Boolean).map(auto);
+        if (!side) { const t = at(bTry, i); if (t) p.breakfast.push(Object.assign({}, t)); }
+      }
+      if (replaceable(p.dinner)) {
+        const r = at(recipes, i + weekNumber());
+        p.dinner = r ? [Object.assign(recipeItem(r), { auto: true })] : [at(prot, i), at(veg, i)].filter(Boolean).map(auto);
+      }
+      if (replaceable(p.lunch)) {
+        const dn = (p.dinner.map(it => it.name).join(' ')).toLowerCase();
+        const overlaps = (f) => f.name.toLowerCase().split(/[^a-z]+/).some(w => w.length > 3 && dn.includes(w));
+        const mains = lMain.filter(f => !overlaps(f));
+        const main = at(mains.length ? mains : lMain, i);
+        const pair = main && LUNCH_SIDES.find(([mains]) => fits(main, mains));
+        const okSides = sides.filter(f => (!main || f.name !== main.name) && (!pair || fits(f, pair[1])));
+        const side = at(okSides, i + 2);
+        p.lunch = [main, side].filter(Boolean).map(auto);
+      }
+      if (replaceable(p.snack)) {
+        const f = at(snacks, i * 3);
+        p.snack = f ? [auto(f)] : [];
+      }
     });
     save();
   }
 
   function itemTag(it, key, slot, idx) {
-    return '<span class="pitem ' + it.kind + '">' + (it.kind === 'recipe' ? ico('sparkle') + ' ' : '') + esc(it.name)
+    return '<span class="pitem ' + it.kind + '"' + (it.kind === 'try' ? ' data-tip="A suggestion to try. Remove it if it\'s not for you."' : '') + '>'
+      + (it.kind === 'recipe' ? ico('sparkle') + ' ' : it.kind === 'try' ? '<i>Try:</i> ' : '') + esc(it.name)
       + '<button class="x" data-unplan="' + key + '|' + slot + '|' + idx + '" aria-label="Remove ' + esc(it.name) + '">×</button></span>';
   }
 
@@ -852,7 +900,8 @@
     if (pickerTarget) {
       const p = dayPlan(pickerTarget.day);
       pickerSel.forEach(v => {
-        if (v.startsWith('f:')) { const f = state.foods.find(x => x.id === v.slice(2)); if (f) p[pickerTarget.slot].push(foodItem(f)); }
+        const has = (n) => p[pickerTarget.slot].some(it => it.name === n);
+        if (v.startsWith('f:')) { const f = state.foods.find(x => x.id === v.slice(2)); if (f && !has(f.name)) p[pickerTarget.slot].push(foodItem(f)); }
         else { const r = RECIPES.find(x => x.name === v.slice(2)); if (r) p[pickerTarget.slot].push(recipeItem(r)); }
       });
       save(); render();
