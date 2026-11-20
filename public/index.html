@@ -91,6 +91,7 @@
       <div class="card brown">
         <h2>Log something you ate</h2>
         <div class="favs" id="favs"></div>
+        <div class="edit-banner" id="edit-banner" hidden></div>
         <form id="log-form">
           <p class="lbl">Which meal?</p>
           <div class="seg meal-pick" role="group" aria-label="Which meal">
@@ -133,7 +134,8 @@
           <input type="text" id="log-note" maxlength="140">
 
           <div class="log-actions">
-            <button type="submit" class="btn">Log it 💛</button>
+            <button type="submit" class="btn" id="log-submit">Log it 💛</button>
+            <button type="button" class="btn ghost inline" id="edit-cancel" hidden>Cancel edit</button>
             <button type="button" class="btn ghost inline" id="fav-save">☆ Save as favorite</button>
           </div>
         </form>

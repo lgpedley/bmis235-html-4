@@ -609,6 +609,7 @@
     const cal = state.settings.calories && e.cal ? ' <span class="muted">· ≈' + e.cal + ' cal</span>' : '';
     return '<li><span class="time">' + fmtTime(e.ts) + '</span><span class="what"><span class="tag ' + e.type + '">' + mealLabel(e) + '</span>'
       + esc(e.foods.map(f => f.name).join(', ')) + cal + (e.note ? '<br><span class="muted">' + esc(e.note) + '</span>' : '') + '</span>'
+      + '<button class="del edit-from" data-edit="' + e.id + '" aria-label="Edit this log" title="Edit">✎</button>'
       + '<button class="del fav-from" data-fav-entry="' + e.id + '" aria-label="Save as favorite" title="Save as a favorite meal">☆</button>'
       + '<button class="del" data-del="' + e.id + '" aria-label="Delete entry" title="Delete">×</button></li>';
   }
@@ -787,17 +788,54 @@
       cal: state.settings.calories ? (+$('#log-cal').value || null) : null,
       note: $('#log-note').value.trim()
     };
-    state.entries.push(entry); save();
-    selected = new Set(); extras = []; calTouched = false;
-    $('#log-note').value = ''; $('#log-time').value = localInputValue(new Date());
-    setLogMeal(mealForTime(new Date()), false); updatePastNote();
+    const wasEditing = editingId;
+    if (wasEditing) {
+      const i = state.entries.findIndex(e => e.id === wasEditing);
+      if (i >= 0) { const old = state.entries[i]; entry.id = old.id; if (old.plate) entry.plate = true; state.entries[i] = entry; }
+      else state.entries.push(entry);
+    } else state.entries.push(entry);
+    save();
+    resetLogForm();
     render();
-    showCheer(entry);
+    if (wasEditing) toast('✓ Changes saved'); else showCheer(entry);
   });
+
+  /* ---- editing a log ---- */
+  let editingId = null;
+  function resetLogForm() {
+    selected = new Set(); extras = []; calTouched = false; editingId = null;
+    $('#log-note').value = ''; $('#log-cal').value = ''; $('#log-time').value = localInputValue(new Date());
+    setLogMeal(mealForTime(new Date()), false); updatePastNote();
+    $('#log-submit').innerHTML = 'Log it 💛'; $('#edit-cancel').hidden = true; $('#edit-banner').hidden = true;
+    $('#log-form').closest('.card').classList.remove('editing');
+  }
+  function startEdit(id) {
+    const e = state.entries.find(x => x.id === id); if (!e) return;
+    editingId = id;
+    selected = new Set(); extras = [];
+    e.foods.forEach(f => { const liked = state.foods.find(x => x.name === f.name); if (liked) selected.add(liked.id); else extras.push(Object.assign({}, f, { groups: f.groups.slice() })); });
+    setLogMeal(e.meal || (e.type === 'snack' ? 'snack' : mealForTime(e.ts)), true);
+    $('#log-time').value = localInputValue(new Date(e.ts)); updatePastNote();
+    calTouched = true; $('#log-cal').value = e.cal || '';
+    $('#log-note').value = e.note || '';
+    document.querySelector('.tabs button[data-tab="today"]').click();
+    renderPicker();
+    $('#log-submit').innerHTML = 'Save changes ✓'; $('#edit-cancel').hidden = false;
+    const b = $('#edit-banner'); b.hidden = false;
+    b.innerHTML = '✎ Editing your <b>' + esc(mealLabel(e).toLowerCase()) + '</b> from ' + esc(fmtDay(e.ts)) + ', ' + esc(fmtTime(e.ts)) + '. Change anything, then tap <b>Save changes</b>.';
+    $('#log-form').closest('.card').classList.add('editing');
+    $('#edit-banner').scrollIntoView({ behavior: 'smooth', block: 'start' });
+  }
+  $('#edit-cancel').addEventListener('click', () => { resetLogForm(); renderPicker(); });
+  function toast(msg) {
+    const t = document.createElement('div'); t.className = 'toast'; t.setAttribute('role', 'status'); t.textContent = msg;
+    document.body.appendChild(t); setTimeout(() => { t.classList.add('out'); setTimeout(() => t.remove(), 300); }, 2200);
+  }
+  document.addEventListener('click', (ev) => { const ed = ev.target.closest('[data-edit]'); if (ed) startEdit(ed.dataset.edit); });
 
   document.addEventListener('click', (ev) => {
     const del = ev.target.closest('[data-del]');
-    if (del) { state.entries = state.entries.filter(e => e.id !== del.dataset.del); save(); render(); return; }
+    if (del) { if (editingId === del.dataset.del) resetLogForm(); state.entries = state.entries.filter(e => e.id !== del.dataset.del); save(); render(); return; }
     const rm = ev.target.closest('[data-remove-food]');
     if (rm) { state.foods = state.foods.filter(f => f.id !== rm.dataset.removeFood); selected.delete(rm.dataset.removeFood); save(); render(); return; }
     if (ev.target.id === 'next-recipe') { state.recipeOffset = (state.recipeOffset || 0) + 1; save(); renderRecipe(); sketchify($('#recipe')); }
