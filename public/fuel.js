@@ -78,7 +78,7 @@
     dairy:   { label: 'Dairy', emoji: '🧀', goal: 14, fact: 'dairy',
                why: 'Calcium and vitamin D for strong bones, plus some protein.',
                ideas: ['Cheese in grilled cheese or mac', 'Alfredo or rosatella sauce', 'A glass of milk with dinner'] },
-    fun:     { label: 'Fun foods', emoji: '🌶', goal: 0, fact: null,
+    fun:     { label: 'Fun foods', emoji: '🍭', goal: 0, fact: null,
                why: 'Food is also joy! Fun foods have a place, and pairing them with a meal can keep cravings calmer.',
                ideas: ['Hot Cheetos as a crunchy side with a grilled cheese', 'Pour a bowl to enjoy instead of eating from the bag'] }
   };
@@ -202,12 +202,12 @@
      Sketch icons: every emoji on the page is swapped for a hand-drawn
      icon from the sprite in index.html
      --------------------------------------------------------------- */
-  const ICONS = { '🍽': 'plate', '🍞': 'bread', '🐟': 'fish', '🥦': 'broccoli', '🍓': 'strawberry', '🧀': 'cheese', '🌶': 'chili',
+  const ICONS = { '🍽': 'plate', '🍞': 'bread', '🐟': 'fish', '🥦': 'broccoli', '🍓': 'strawberry', '🧀': 'cheese', '🌶': 'chili', '🍭': 'lollipop',
     '💛': 'heart', '📊': 'chart', '💡': 'bulb', '🌈': 'rainbow', '💪': 'dumbbell', '🥔': 'potato', '🌽': 'corn', '🔥': 'fire',
     '🔋': 'battery', '✨': 'sparkle', '🎉': 'sparkle', '☀': 'sun', '🌱': 'sprout', '⏱': 'timer', '📅': 'calendar', '🛒': 'cart', '🔍': 'search', '🍳': 'pan', '🧂': 'shaker' };
   const ICON_RE = new RegExp('(' + Object.keys(ICONS).join('|') + ')\uFE0F?', 'gu');
   const ICON_TEST = new RegExp('(' + Object.keys(ICONS).join('|') + ')', 'u');  // no "g" flag, so repeated .test() calls are reliable
-  const GROUP_ICON = { carbs: 'bread', protein: 'fish', veg: 'broccoli', fruit: 'strawberry', dairy: 'cheese', fun: 'chili' };
+  const GROUP_ICON = { carbs: 'bread', protein: 'fish', veg: 'broccoli', fruit: 'strawberry', dairy: 'cheese', fun: 'lollipop' };
   function ico(name, cls) { return '<svg class="ico' + (cls ? ' ' + cls : '') + '" aria-hidden="true"><use href="#i-' + name + '"/></svg>'; }
   function sketchify(root) {
     const walker = document.createTreeWalker(root, NodeFilter.SHOW_TEXT, {
@@ -863,18 +863,26 @@
     const at = (arr, i) => arr.length ? arr[((i + seed) % arr.length + arr.length) % arr.length] : null;
     const auto = (f) => Object.assign(foodItem(f), { auto: true });
     const replaceable = (items) => !items.length || items.every(it => it.auto);
+    // dishes you can make right now with your pantry + cooking extras, by meal
+    const ready = (meal) => (state.pantry || []).length ? PANTRY_DISHES.filter(dd => dd.meal === meal && dd.need.every(req => pantryHas(req))) : [];
+    const rB = ready('Breakfast'), rL = ready('Lunch'), rD = ready('Dinner'), rS = ready('Snack');
     days.forEach((d, i) => {
       const p = dayPlan(isoDate(d));
       if (replaceable(p.breakfast)) {
-        const base = at(bBase, i), side = at(bSide, i);
-        p.breakfast = [base, side].filter(Boolean).map(auto);
-        if (!side) { const t = at(bTry, i); if (t) p.breakfast.push(Object.assign({}, t)); }
+        if (rB.length && i % 2 === 0) p.breakfast = [dishItem(at(rB, i / 2))];
+        else {
+          const base = at(bBase, i), side = at(bSide, i);
+          p.breakfast = [base, side].filter(Boolean).map(auto);
+          if (!side) { const t = at(bTry, i); if (t) p.breakfast.push(Object.assign({}, t)); }
+        }
       }
       if (replaceable(p.dinner)) {
         const r = at(recipes, i + weekNumber());
-        p.dinner = r ? [Object.assign(recipeItem(r), { auto: true })] : [at(prot, i), at(veg, i)].filter(Boolean).map(auto);
+        if (rD.length && i % 2 === 1) p.dinner = [dishItem(at(rD, (i - 1) / 2))];
+        else p.dinner = r ? [Object.assign(recipeItem(r), { auto: true })] : [at(prot, i), at(veg, i)].filter(Boolean).map(auto);
       }
-      if (replaceable(p.lunch)) {
+      if (replaceable(p.lunch) && rL.length && i % 2 === 1) { p.lunch = [dishItem(at(rL, (i - 1) / 2))]; }
+      else if (replaceable(p.lunch)) {
         const dn = (p.dinner.map(it => it.name).join(' ')).toLowerCase();
         const overlaps = (f) => f.name.toLowerCase().split(/[^a-z]+/).some(w => w.length > 3 && dn.includes(w));
         const mains = lMain.filter(f => !overlaps(f));
@@ -885,16 +893,19 @@
         p.lunch = [main, side].filter(Boolean).map(auto);
       }
       if (replaceable(p.snack)) {
-        const f = at(snacks, i * 3);
-        p.snack = f ? [auto(f)] : [];
+        if (rS.length && i % 3 === 0) p.snack = [dishItem(at(rS, i / 3))];
+        else { const f = at(snacks, i * 3); p.snack = f ? [auto(f)] : []; }
       }
     });
     save();
   }
 
+  function dishItem(dd) { return { kind: 'dish', name: dd.name, groups: dd.groups.slice(), cal: estimateCal(dd.name, dd.groups[0]).cal, auto: true }; }
+
   function itemTag(it, key, slot, idx) {
     return '<span class="pitem ' + it.kind + '"' + (it.kind === 'try' ? ' data-tip="A suggestion to try. Remove it if it\'s not for you."' : '') + '>'
-      + (it.kind === 'recipe' ? ico('sparkle') + ' ' : it.kind === 'try' ? '<i>Try:</i> ' : '') + esc(it.name)
+      + '<button class="howto-link" data-howto="' + esc(it.kind + '|' + it.name + '|' + key + '|' + slot) + '" title="How to make it">'
+      + (it.kind === 'recipe' ? ico('sparkle') + ' ' : it.kind === 'dish' ? '🍳 ' : it.kind === 'try' ? '<i>Try:</i> ' : '') + esc(it.name) + '</button>'
       + '<button class="x" data-unplan="' + key + '|' + slot + '|' + idx + '" aria-label="Remove ' + esc(it.name) + '">×</button></span>';
   }
 
@@ -911,15 +922,16 @@
   }
 
   function groceryList(days) {
-    const foods = new Map(), recipes = new Map();
+    const foods = new Map(), recipes = new Map(), dishes = new Map();
     days.forEach(d => {
       const p = peekPlan(isoDate(d)); if (!p) return;
       SLOTS.forEach(([k]) => p[k].forEach(it => {
         if (it.kind === 'recipe') { const r = RECIPES.find(x => x.name === it.name); if (r) recipes.set(r.name, r.ingredients); }
+        else if (it.kind === 'dish') { const dd = PANTRY_DISHES.find(x => x.name === it.name); if (dd) dishes.set(dd.name, dd.need.map(req => cap1(req[0]))); }
         else if (!foods.has(it.name.toLowerCase())) foods.set(it.name.toLowerCase(), it.name);
       }));
     });
-    return { foods: [...foods.values()], recipes: [...recipes.entries()] };
+    return { foods: [...foods.values()], recipes: [...recipes.entries()], dishes: [...dishes.entries()] };
   }
 
   function renderPlan() {
@@ -943,13 +955,17 @@
 
     const groc = groceryList(days), wk = isoDate(days[0]);
     state.grocery = state.grocery || {}; const checked = state.grocery[wk] || {};
-    const box = (n) => '<li><label><input type="checkbox" data-groc="' + wk + '|' + esc(n) + '"' + (checked[n] ? ' checked' : '') + '> <span>' + esc(n) + '</span></label></li>';
+    const box = (n, strict) => { const h = haveIngredient(n, strict === true);
+      return '<li' + (h ? ' class="have"' : '') + '><label><input type="checkbox" data-groc="' + wk + '|' + esc(n) + '"' + (checked[n] || h ? ' checked' : '') + '> <span>' + esc(n) + '</span>'
+        + (h ? ' <em class="have-tag">already have</em>' : '') + '</label></li>'; };
     let html = '';
     state.groceryExtra = state.groceryExtra || {};
     const mine = state.groceryExtra[wk] || [];
     if (mine.length) html += '<h3 class="sub">Added by me</h3><ul class="grocery">' + mine.map((n, i) =>
       box(n).replace('</label></li>', '</label><button class="x" data-groc-del="' + wk + '|' + i + '" aria-label="Remove ' + esc(n) + '">×</button></li>')).join('') + '</ul>';
-    if (groc.foods.length) html += '<h3 class="sub">Everyday foods</h3><ul class="grocery">' + groc.foods.map(box).join('') + '</ul>';
+    if (groc.foods.length) html += '<h3 class="sub">Everyday foods</h3><ul class="grocery">' + groc.foods.map(n => box(n, true)).join('') + '</ul>';
+    if (groc.dishes && groc.dishes.length) html += '<div class="groc-recipes">' + groc.dishes.map(([name, ings]) =>
+      '<div class="groc-recipe"><h3 class="sub">🍳 ' + esc(name) + '</h3><ul class="grocery one">' + ings.map(box).join('') + '</ul></div>').join('') + '</div>';
     if (groc.recipes.length) html += '<div class="groc-recipes">' + groc.recipes.map(([name, ings]) =>
       '<div class="groc-recipe"><h3 class="sub">✨ ' + esc(name) + '</h3><ul class="grocery one">' + ings.map(box).join('') + '</ul></div>').join('') + '</div>';
     $('#grocery').innerHTML = html || '<p class="muted">Add meals to your plan and your shopping list builds itself here.</p>';
@@ -960,8 +976,8 @@
     const key = isoDate(new Date()), p = peekPlan(key), box = $('#planned-today');
     const has = p && SLOTS.some(([k]) => p[k].length);
     box.hidden = !has; if (!has) return;
-    box.innerHTML = '<h2>📅 Planned for today</h2><ul class="entries">' + SLOTS.filter(([k]) => p[k].length).map(([k, label, icon]) =>
-      '<li><span class="time">' + ico(icon) + ' ' + label + '</span><span class="what">' + esc(p[k].map(i => i.name).join(', ')) + '</span>'
+    box.innerHTML = '<h2>📅 Planned for today</h2><p class="muted">Tap a food to see how to make it.</p><ul class="entries">' + SLOTS.filter(([k]) => p[k].length).map(([k, label, icon]) =>
+      '<li><span class="time">' + ico(icon) + ' ' + label + '</span><span class="what">' + p[k].map(it => '<button class="howto-link inline" data-howto="' + esc(it.kind + '|' + it.name + '|' + key + '|' + k) + '">' + esc(it.name) + '</button>').join(', ') + '</span>'
       + (p.logged && p.logged[k] ? '<span class="done">✓ eaten</span>' : '<button class="btn small" data-log-plan="' + k + '">I ate this</button>') + '</li>').join('') + '</ul>'
       + '<p class="muted">Ate something different? No problem at all, just log what you had below.</p>';
   }
@@ -1359,7 +1375,7 @@
     const cap = (w) => w.charAt(0).toUpperCase() + w.slice(1);
     const card = (r) => {
       const add = r.missing.map(req => cap(req[0]));
-      return '<div class="idea dish"><div class="dish-top"><h3>' + esc(r.d.name) + '</h3><span class="pill">' + esc(r.d.meal) + '</span></div>'
+      return '<div class="idea dish"><div class="dish-top"><h3><button class="howto-link title" data-howto="' + esc('dish|' + r.d.name) + '">' + esc(r.d.name) + ' →</button></h3><span class="pill">' + esc(r.d.meal) + '</span></div>'
         + '<div class="meta">' + r.d.groups.map(g => '<span class="pill">' + ico(GROUP_ICON[g]) + ' ' + esc(GROUPS[g].label) + '</span>').join('') + '</div>'
         + '<p>' + esc(r.d.steps) + '</p>'
         + (r.extras.length ? '<p class="muted">✓ You also have ' + esc(r.extras.join(', ')) + ' to add.</p>' : '')
@@ -1389,5 +1405,119 @@
     if (sh) { const n = addToShopping(sh.dataset.pantryShop.split('|')); renderPlan(); sketchify($('#tab-plan')); flash(sh, '✓ Added ' + n + ' to this week\'s list'); }
   });
 
+  /* ===============================================================
+     HOW TO MAKE IT page (#make/...)
+     =============================================================== */
+  function cap1(w) { return w.charAt(0).toUpperCase() + w.slice(1); }
+  const STOP = /^(cup|cups|tbsp|tsp|oz|small|large|medium|slice|slices|optional|fresh|about|chopped|minced|cooked|shredded|extra|frozen|thinly|sliced|cubed|flaked|clove|cloves|piece|handful|handfuls|your|with|and|or|any|shape|leftovers|perfect|box|black|crushed|a|of|the|for)$/;
+  function haveIngredient(line, strict) {
+    const l = line.toLowerCase();
+    if (/^(salt|pepper|olive oil|oil)\b/.test(l) || /salt, pepper/.test(l)) return true;
+    const words = l.replace(/[^a-z ]/g, ' ').split(/\s+/).filter(w => w.length > 2 && !STOP.test(w));
+    const hit = (w) => pantryHas([w.replace(/(es|s)$/, '')]);
+    return words.length > 0 && (strict ? words.every(hit) : words.some(hit));
+  }
+
+  // Simple guides for single foods
+  const FOOD_HOWTO = [
+    ['garlic bread', 10, ['Frozen garlic bread (or bread + butter + garlic)'], ['Heat the oven to 400°F (200°C).', 'Bake frozen garlic bread 8–10 minutes until golden. Homemade: spread bread with butter mixed with garlic and bake 6–8 minutes.']],
+    ['grilled cheese', 8, ['2 slices bread', '2 slices cheese', 'Butter'], ['Butter one side of each slice.', 'Put one slice butter-side down in a pan on medium, add cheese, and top with the other slice butter-side up.', 'Cook 2–3 minutes per side until golden and melty.']],
+    ['toast', 3, ['Bread', 'Butter (optional)'], ['Toast bread until golden.', 'Butter it while it\'s hot. Add peanut butter, banana or cheese for extra staying power.']],
+    ['mac', 12, ['1 box mac and cheese (and the milk/butter it calls for)'], ['Boil water and cook the pasta 7–8 minutes.', 'Drain, then stir in the cheese packet with the milk and butter.', 'Optional: toss in broccoli for the last 3 minutes of boiling.']],
+    ['butter noodle', 12, ['2 oz noodles', '1 tbsp butter', 'Parmesan (optional)'], ['Boil noodles in salted water until tender.', 'Drain, then toss with butter, a pinch of salt and parmesan.']],
+    ['pasta', 12, ['2 oz pasta', 'Sauce you like'], ['Boil a big pot of salted water.', 'Cook pasta per the box time, stirring once or twice.', 'Drain and toss with warm sauce, butter or parmesan.']],
+    ['alfredo', 5, ['Alfredo sauce', 'Cooked pasta'], ['Warm ½ cup sauce in a small pot or the microwave.', 'Toss with hot pasta. Stir in broccoli or spinach if you like.']],
+    ['rosatella', 5, ['Rosatella sauce', 'Cooked pasta'], ['Warm ½ cup sauce in a small pot or the microwave.', 'Toss with hot pasta and top with parmesan.']],
+    ['salmon', 15, ['1 salmon fillet', 'Butter or oil', 'Salt, pepper, garlic'], ['Heat the oven to 400°F (200°C).', 'Put salmon on a lined pan, season, and top with a little butter.', 'Bake 12–15 minutes, until it flakes easily with a fork.']],
+    ['steak', 15, ['1 steak', 'Salt, pepper', 'Butter (optional)'], ['Take the steak out 20 minutes early and pat it dry. Season well.', 'Heat a pan until very hot with a little oil.', 'Sear 3–4 minutes per side (longer if thick), adding butter at the end.', 'Rest 5 minutes before slicing.']],
+    ['burger', 12, ['4 oz ground beef', 'Bun', 'Cheese, pickles, sauce'], ['Shape beef into a patty a bit wider than the bun; season with salt and pepper.', 'Cook in a hot pan 3–4 minutes per side. Add cheese for the last minute.', 'Build on a toasted bun with pickles and sauce.']],
+    ['beef', 12, ['4 oz ground beef', 'Salt, pepper'], ['Cook beef in a pan on medium-high, breaking it up, 6–8 minutes until browned.', 'Season with salt, pepper and garlic powder.']],
+    ['sweet corn', 6, ['1 ear corn', 'Butter, salt'], ['Microwave the ear in its husk 4 minutes (or boil 5 minutes).', 'Let it cool a minute, peel, and add butter and salt.']],
+    ['corn', 6, ['Corn', 'Butter, salt'], ['Boil or microwave 4–5 minutes.', 'Add butter and salt.']],
+    ['broccoli', 15, ['2 cups broccoli', 'Oil, salt', 'Parmesan (optional)'], ['Roast: toss with oil and salt, then 425°F (220°C) for 15 minutes until crispy edges.', 'Or steam: microwave with a splash of water, covered, 3 minutes.']],
+    ['fries', 20, ['Frozen fries'], ['Bake at 425°F (220°C) for 20 minutes, flipping halfway, or air-fry at 400°F for 12–15 minutes.', 'Salt while hot.']],
+    ['potato', 25, ['2 small potatoes', 'Oil, salt, garlic powder'], ['Heat the oven to 425°F (220°C).', 'Cut into bite-size cubes and toss with oil and seasoning.', 'Roast 25 minutes, flipping once, until crispy.', 'Quick option: prick a whole potato and microwave 8–10 minutes.']],
+    ['pickle', 0, ['Pickles'], ['Ready to eat! Grab a few spears.', 'Tip: pair with a cheese stick or crackers for a more filling snack.']],
+    ['cheeto', 0, ['Hot Cheetos'], ['Pour a bowl instead of eating from the bag. Enjoy every crunch!', 'Tip: having them with a sandwich or some cheese keeps you fuller longer.']],
+    ['egg', 5, ['2 eggs', 'Butter', 'Cheese (optional)'], ['Whisk eggs with a pinch of salt.', 'Melt butter in a pan on low and add eggs.', 'Stir slowly until just set, about 2–3 minutes. Add cheese at the end.']],
+    ['banana', 0, ['1 banana'], ['Peel and eat, or slice onto toast with peanut butter.']],
+    ['strawberr', 2, ['Strawberries'], ['Rinse, cut off the green tops and enjoy. Great with a cheese stick.']],
+    ['peanut butter', 3, ['Peanut butter', 'Toast or apple slices'], ['Spread 2 tbsp on toast or use as a dip for apple slices.']],
+    ['milk', 0, ['1 cup milk'], ['Pour a glass, or blend with banana and frozen strawberries for a smoothie.']]
+  ];
+
+  function howtoData(kind, name) {
+    const r = RECIPES.find(x => x.name === name);
+    if (r) return { name: r.name, mins: r.mins, cal: r.cal, groups: r.groups, ingredients: r.ingredients, steps: r.steps, fact: r.fact, stretch: r.stretch, meal: 'Recipe' };
+    const dd = PANTRY_DISHES.find(x => x.name === name);
+    if (dd) return { name: dd.name, groups: dd.groups, cal: estimateCal(dd.name, dd.groups[0]).cal, meal: dd.meal,
+      ingredients: dd.need.map(req => cap1(req[0])).concat(dd.extra.map(req => cap1(req[0]) + ' (optional)')),
+      steps: dd.steps.split(/(?<=\.)\s+/).filter(Boolean), fact: dd.groups.includes('protein') ? 'protein' : dd.groups.includes('veg') ? 'veg' : 'brain' };
+    const n = name.toLowerCase(), h = FOOD_HOWTO.find(([k]) => n.includes(k));
+    const f = state.foods.find(x => x.name === name), g = f ? f.groups : [estimateCal(name).group];
+    if (h) return { name, mins: h[1], cal: estimateCal(name, g[0]).cal, groups: g, ingredients: h[2], steps: h[3], fact: GROUPS[g[0]] && GROUPS[g[0]].fact, meal: 'Food' };
+    return { name, groups: g, cal: estimateCal(name, g[0]).cal, ingredients: [name], steps: ['No step-by-step guide for this one yet. Prepare it the way you like it!', 'Tip: pair it with a protein or a veggie to make it a fuller meal.'], fact: 'timing', meal: 'Food' };
+  }
+
+  let lastTab = 'today';
+  function showHowto(kind, name, day, slot) {
+    const h = howtoData(kind, name);
+    const have = h.ingredients.map(i => ({ i, ok: haveIngredient(i.replace(/\(optional\)/, '')), opt: /optional/i.test(i) }));
+    const missing = have.filter(x => !x.ok && !x.opt).map(x => x.i.replace(/^[\d½¼¾\s]+(oz|cup|cups|tbsp|tsp|small|large)?\s*/i, '').replace(/\s*\(.*\)/, ''));
+    const season = seasonFor(h.name + ' ' + h.steps.join(' '));
+    $('#howto').innerHTML = '<button class="btn ghost inline back" data-howto-back>← Back</button>'
+      + '<div class="card howto-card"><p class="muted">' + ico('pan') + ' How to make it</p><h2 class="howto-title">' + esc(h.name) + '</h2>'
+      + '<div class="meta">' + (h.mins !== undefined ? '<span class="pill">⏱ ' + (h.mins ? h.mins + ' min' : 'No cooking!') + '</span>' : '')
+      + (h.cal ? '<span class="pill cal-only">≈ ' + h.cal + ' cal</span>' : '')
+      + h.groups.filter(g => GROUPS[g]).map(g => '<span class="pill yes">' + ico(GROUP_ICON[g]) + ' ' + esc(GROUPS[g].label) + '</span>').join('') + '</div>'
+      + '<div class="howto-cols"><div class="card olive inner"><h3>' + ico('cart') + ' Ingredients</h3><ul class="ing">'
+      + have.map(x => '<li class="' + (x.ok ? 'ok' : x.opt ? 'opt' : 'no') + '"><span class="mark">' + (x.ok ? '✓' : x.opt ? '·' : '○') + '</span>' + esc(x.i)
+        + (x.ok ? ' <em>you have it</em>' : '') + '</li>').join('') + '</ul>'
+      + (missing.length ? '<button class="btn small" data-howto-shop="' + esc(missing.join('|')) + '">🛒 Add ' + missing.length + ' missing to list</button>' : '<p class="tip">🎉 You have everything you need!</p>')
+      + (season.length ? '<p class="season">🧂 Season with your: <b>' + esc(season.join(', ')) + '</b></p>' : '')
+      + '</div><div><h3>Steps <span class="muted">(tap to tick off)</span></h3><ol class="steps">'
+      + h.steps.map(st => '<li tabindex="0">' + esc(st) + '</li>').join('') + '</ol>'
+      + (h.stretch ? '<p class="tip">🌱 Feeling brave? ' + esc(h.stretch) + '</p>' : '') + '</div></div>'
+      + (h.fact ? '<h3>Why it\'s good for you</h3>' + factHTML(typeof h.fact === 'string' && FACTS[h.fact] ? h.fact : dailyFact(h.groups[0])) : '')
+      + '<button class="btn" data-howto-log="' + esc([kind, name, day || '', slot || ''].join('|')) + '">💛 I made it! Log this</button></div>';
+    document.querySelectorAll('.panel').forEach(p => p.classList.toggle('on', p.id === 'tab-howto'));
+    document.querySelectorAll('.tabs button').forEach(x => x.classList.remove('on'));
+    sketchify($('#howto')); window.scrollTo({ top: 0 });
+  }
+  function leaveHowto() {
+    document.querySelectorAll('.panel').forEach(p => p.classList.toggle('on', p.id === 'tab-' + lastTab));
+    document.querySelectorAll('.tabs button').forEach(x => x.classList.toggle('on', x.dataset.tab === lastTab));
+  }
+  function routeHash() {
+    const m = location.hash.match(/^#make\/(.+)$/);
+    if (m) { const [kind, name, day, slot] = decodeURIComponent(m[1]).split('|'); showHowto(kind, name, day, slot); }
+    else if ($('#tab-howto').classList.contains('on')) leaveHowto();
+  }
+  window.addEventListener('hashchange', routeHash);
+  document.querySelectorAll('.tabs button').forEach(b => b.addEventListener('click', () => {
+    lastTab = b.dataset.tab;
+    if (location.hash.startsWith('#make/')) history.replaceState(null, '', location.pathname + location.search);
+  }));
+  document.addEventListener('click', (ev) => {
+    const ht = ev.target.closest('[data-howto]');
+    if (ht) { const cur = document.querySelector('.panel.on'); if (cur && cur.id !== 'tab-howto') lastTab = cur.id.replace('tab-', ''); location.hash = '#make/' + encodeURIComponent(ht.dataset.howto); return; }
+    if (ev.target.closest('[data-howto-back]')) { if (history.length > 1) history.back(); else { location.hash = ''; leaveHowto(); } return; }
+    const st = ev.target.closest('.steps li'); if (st) { st.classList.toggle('done'); return; }
+    const sh = ev.target.closest('[data-howto-shop]');
+    if (sh) { const n = addToShopping(sh.dataset.howtoShop.split('|')); renderPlan(); sketchify($('#tab-plan')); flash(sh, '✓ Added ' + n + ' to this week\'s list'); return; }
+    const lg = ev.target.closest('[data-howto-log]');
+    if (lg) {
+      const [kind, name, day, slot] = lg.dataset.howtoLog.split('|'), h = howtoData(kind, name);
+      const entry = { id: uid(), ts: new Date().toISOString(), type: slot === 'snack' ? 'snack' : 'meal',
+        foods: [{ name: h.name, groups: h.groups.filter(g => GROUPS[g]), cal: h.cal || 0 }], cal: state.settings.calories ? (h.cal || null) : null, note: 'Made it myself' };
+      if (day && slot && state.plan && state.plan[day]) { state.plan[day].logged = state.plan[day].logged || {}; state.plan[day].logged[slot] = true; }
+      state.entries.push(entry); save();
+      lastTab = 'today'; history.replaceState(null, '', location.pathname + location.search); leaveHowto();
+      render(); showCheer(entry);
+    }
+  });
+  document.addEventListener('keydown', (ev) => { if (ev.key === 'Enter' && ev.target.matches('.steps li')) ev.target.classList.toggle('done'); });
+
   render();
+  routeHash();
 })();

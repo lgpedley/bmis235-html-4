@@ -433,3 +433,30 @@ dialog.picker::backdrop { background: rgba(80,5,14,.35); }
 .extra-col .chips.quick .chip:hover { color: var(--on-brown); border-color: var(--olive-line); }
 .dish .season { color: var(--olive); font-size: .9rem; }
 .dish .season b { color: var(--garnet); }
+
+/* ---------- how-to page ---------- */
+.howto-link { font: inherit; background: none; border: 0; padding: 0; color: inherit; cursor: pointer; text-align: left; }
+.howto-link:hover { text-decoration: underline; text-decoration-color: var(--olive); text-decoration-thickness: 2px; }
+.howto-link.inline { font-weight: 700; text-decoration: underline dotted var(--olive); text-underline-offset: 3px; }
+.howto-link.title { font-weight: 800; }
+.pitem .howto-link { font-size: inherit; }
+.back { margin-bottom: 12px; }
+.howto-card .howto-title { font-size: 2rem; text-decoration: none; margin-top: 4px; }
+.howto-cols { display: grid; grid-template-columns: 1fr 1.3fr; gap: 22px; margin: 14px 0; align-items: start; }
+@media (max-width: 760px) { .howto-cols { grid-template-columns: 1fr; } }
+.card.inner { margin: 0; }
+.card.inner h3, .howto-cols h3 { margin-top: 0; display: flex; align-items: center; gap: 6px; }
+.ing { list-style: none; padding: 0; margin: 0 0 12px; }
+.ing li { display: flex; gap: 8px; padding: 6px 0; border-top: 1px solid var(--olive-line); align-items: baseline; }
+.ing .mark { width: 1.2em; font-weight: 900; text-align: center; }
+.ing li.ok .mark { color: var(--olive); }
+.ing li.no .mark { color: var(--cherry); }
+.ing li.opt { color: var(--ink-soft); }
+.ing em { font-style: normal; font-size: .75rem; font-weight: 800; background: var(--olive-mid); border-radius: 999px; padding: 0 8px; margin-left: auto; white-space: nowrap; }
+.steps { padding-left: 0; list-style: none; counter-reset: st; margin: 0; }
+.steps li { counter-increment: st; position: relative; padding: 12px 12px 12px 52px; margin-bottom: 8px; background: var(--icy); border-radius: 14px; cursor: pointer; font-size: 1.02rem; }
+.steps li::before { content: counter(st); position: absolute; left: 12px; top: 10px; width: 28px; height: 28px; border-radius: 50%; background: var(--garnet); color: var(--buttercup); display: grid; place-items: center; font-weight: 800; }
+.steps li.done { opacity: .55; text-decoration: line-through; }
+.steps li.done::before { content: '✓'; background: var(--olive); }
+.grocery li.have span { opacity: .6; }
+.have-tag { font-style: normal; font-size: .72rem; font-weight: 800; background: var(--olive-mid); color: var(--garnet); border-radius: 999px; padding: 0 8px; margin-left: 4px; }
