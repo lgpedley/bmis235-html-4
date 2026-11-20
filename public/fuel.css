@@ -1,16 +1,16 @@
 /* =====================================================================
    Gentle Plate · styles
-   Palette: Buttercup #FFF4F6 · Warm Pink #FF88BE · Cherry #741D28 · Garnet #741D28 · Icy Blue #FFD2D9 · Olive #B9AC39
+   Palette: Buttercup #FCF9E8 · Warm Pink #A5BCD6 · Cherry #4D0E12 · Garnet #4D0E12 · Icy Blue #F5EFC6 · Olive #4A2E27
    ===================================================================== */
 :root {
   /* Palette */
-  --buttercup: #FFF4F6;
-  --warmpink: #FF88BE;
-  --cherry: #741D28;
-  --garnet: #741D28;
-  --icy: #FFD2D9;
-  --olive: #B9AC39;
-  --sand: #FF88BE;
+  --buttercup: #FCF9E8;
+  --warmpink: #A5BCD6;
+  --cherry: #4D0E12;
+  --garnet: #4D0E12;
+  --icy: #F5EFC6;
+  --olive: #4A2E27;
+  --sand: #A5BCD6;
 
   /* aliases the rest of the file uses */
   --rust: var(--garnet);
@@ -26,7 +26,7 @@
   --bg: var(--icy);           /* page background */
   --card: var(--buttercup);   /* cards */
   --soft: var(--warmpink);    /* highlight cards, selected chips */
-  --teal-light: #F3EFD2;      /* light olive: encouragement card */
+  --teal-light: #EFE7BF;      /* light olive: encouragement card */
 
   /* names used throughout this file */
   --burgundy: var(--purple);
@@ -42,8 +42,8 @@
   --sage: var(--soft);
 
   --ink: var(--purple);
-  --ink-soft: #8A3C47;
-  --line: #F2B8C4;
+  --ink-soft: #5C4A40;
+  --line: #DDD2A0;
   --radius: 18px;
 }
 
@@ -98,7 +98,7 @@ main { max-width: 1100px; margin: 0 auto; padding: 20px 16px 10px; }
   padding: 20px;
   margin-bottom: 18px;
 }
-.card.hello { background: var(--warmpink); border-color: #E0679F; }
+.card.hello { background: var(--warmpink); border-color: #7F9AB8; }
 .card.cheer { background: var(--blue-light); border-color: var(--blue-deep); }
 .grid2 { display: grid; grid-template-columns: 1fr 1fr; gap: 18px; align-items: start; }
 @media (max-width: 800px) { .grid2 { grid-template-columns: 1fr; } }
@@ -121,7 +121,7 @@ input:focus, select:focus, button:focus-visible { outline: 3px solid var(--rose)
   background: var(--crimson); color: var(--yellow);
   border: 0; border-radius: 999px; padding: 12px 22px; margin-top: 16px;
 }
-.btn:hover { background: #5A141E; }
+.btn:hover { background: #360A0D; }
 .btn.small { padding: 8px 14px; margin-top: 0; }
 .btn.ghost { background: transparent; color: var(--brown); border: 2px solid var(--burgundy); display: block; margin-top: 10px; }
 .btn.ghost:hover { background: var(--blush); }
@@ -248,7 +248,7 @@ footer { max-width: 1100px; margin: 0 auto; padding: 10px 16px 40px; font-size: 
 .top { border-bottom: 5px solid var(--burnt); }
 
 /* ---------- brown cards (alternate with the light ones) ---------- */
-:root { --brown-card: #741D28; --on-brown: #FFF4F6; --on-brown-soft: #FFD2D9; }
+:root { --brown-card: #4D0E12; --on-brown: #FCF9E8; --on-brown-soft: #F5EFC6; }
 .card.brown, .groups-grid .group-card:nth-child(even) {
   background: var(--brown-card); border-color: var(--brown-card); color: var(--on-brown);
 }
@@ -256,7 +256,7 @@ footer { max-width: 1100px; margin: 0 auto; padding: 10px 16px 40px; font-size: 
 .groups-grid .group-card:nth-child(even) .muted { color: var(--on-brown-soft); }
 .card.brown a { color: var(--warmpink); }
 .card.brown .btn:not(.ghost) { background: var(--warmpink); color: var(--garnet); }
-.card.brown .btn:not(.ghost):hover { background: #FF9FCB; }
+.card.brown .btn:not(.ghost):hover { background: #B9CBE0; }
 .card.brown .fact, .groups-grid .group-card:nth-child(even) .fact { background: var(--buttercup); color: var(--garnet); }
 .card.brown .fact .src, .groups-grid .group-card:nth-child(even) .fact .src { color: var(--ink-soft); }
 .groups-grid .group-card:nth-child(even) .amount, .card.brown .pill { color: var(--garnet); }
@@ -289,7 +289,7 @@ h2 .ico { width: 1.35em; height: 1.35em; }
 .btn.ghost.inline { display: inline-block; margin-top: 0; }
 .plan-grid { display: grid; grid-template-columns: 1fr; gap: 14px; margin: 12px 0 18px; }
 .plan-day { background: var(--card); border: 2px solid var(--line); border-radius: var(--radius); padding: 14px 16px; }
-.plan-day.today { border-color: var(--cherry); box-shadow: 0 0 0 3px rgba(116,29,40,.15); }
+.plan-day.today { border-color: var(--cherry); box-shadow: 0 0 0 3px rgba(77,14,18,.15); }
 .plan-head { display: flex; flex-wrap: wrap; justify-content: space-between; align-items: center; gap: 8px; margin-bottom: 8px; }
 .plan-head h3 { margin: 0; font-size: 1.1rem; }
 .badge { background: var(--cherry); color: var(--buttercup); font-size: .75rem; padding: 2px 10px; border-radius: 999px; vertical-align: 2px; }
@@ -304,13 +304,13 @@ h2 .ico { width: 1.35em; height: 1.35em; }
 .slot-name { font-weight: 800; font-size: .9rem; }
 .slot-items { display: flex; flex-wrap: wrap; gap: 4px; flex: 1; align-content: flex-start; }
 .pitem { display: inline-flex; align-items: center; gap: 2px; background: #fff; border: 1.5px solid var(--line); border-radius: 999px; padding: 2px 4px 2px 10px; font-size: .85rem; }
-.pitem.recipe { background: var(--warmpink); border-color: #E0679F; font-weight: 700; }
+.pitem.recipe { background: var(--warmpink); border-color: #7F9AB8; font-weight: 700; }
 .pitem .x { font: inherit; border: 0; background: none; cursor: pointer; color: var(--ink-soft); padding: 0 4px; }
 .slot .add { font: inherit; font-size: .85rem; font-weight: 700; cursor: pointer; align-self: flex-start;
   background: transparent; color: var(--garnet); border: 1.5px dashed var(--garnet); border-radius: 999px; padding: 3px 12px; }
 .slot .add:hover { background: rgba(255,255,255,.6); }
 .done { font-size: .8rem; font-weight: 800; color: var(--olive); white-space: nowrap; }
-.card.brown .done { color: #DCD493; }
+.card.brown .done { color: #D9CD98; }
 
 .grocery { list-style: none; padding: 0; margin: 0; columns: 2 220px; }
 .grocery li { break-inside: avoid; padding: 4px 0; }
@@ -323,8 +323,8 @@ h2 .ico { width: 1.35em; height: 1.35em; }
 .card.planned .btn.small { padding: 6px 14px; }
 
 dialog.picker { border: 0; border-radius: var(--radius); padding: 22px; max-width: 560px; width: calc(100% - 32px);
-  background: var(--card); color: var(--ink); box-shadow: 0 20px 60px rgba(116,29,40,.35); }
-dialog.picker::backdrop { background: rgba(116,29,40,.35); }
+  background: var(--card); color: var(--ink); box-shadow: 0 20px 60px rgba(35,24,21,.35); }
+dialog.picker::backdrop { background: rgba(35,24,21,.35); }
 .picker-actions { display: flex; gap: 10px; margin-top: 16px; }
 .picker-actions .btn { margin-top: 0; }
 
@@ -359,7 +359,7 @@ dialog.picker::backdrop { background: rgba(116,29,40,.35); }
 .idea-actions { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; margin-top: auto; padding-top: 6px; }
 .idea-actions .btn { margin-top: 0; padding: 7px 14px; font-size: .88rem; }
 .btn.soft { background: var(--warmpink); color: var(--garnet); }
-.btn.soft:hover { background: #FF9FCB; }
+.btn.soft:hover { background: #B9CBE0; }
 .linkish { font: inherit; font-size: .85rem; background: none; border: 0; color: var(--ink-soft); text-decoration: underline; cursor: pointer; padding: 4px; }
 .card.brown .idea { background: var(--buttercup); color: var(--garnet); }
 .card.brown .idea .muted { color: var(--ink-soft); }
@@ -370,7 +370,7 @@ dialog.picker::backdrop { background: rgba(116,29,40,.35); }
 .idea .pill.yes { background: var(--warmpink); }
 
 /* ---------- more olive through the layout ---------- */
-:root { --olive-light: #F3EFD2; --olive-mid: #E2DB9E; --olive-line: #D4CB7A; }
+:root { --olive-light: #EFE7BF; --olive-mid: #E2D7A6; --olive-line: #CDBF88; }
 .top { border-bottom-color: var(--olive); }
 .card.olive { background: var(--olive-light); border-color: var(--olive-line); }
 .card.olive .idea { background: var(--buttercup); }
@@ -464,39 +464,59 @@ dialog.picker::backdrop { background: rgba(116,29,40,.35); }
 
 /* ---------- Old Rose / Rosewood / Sand / Ebony / Dark Coffee ---------- */
 .top { background: var(--olive); border-bottom-color: var(--sand); }
-.tagline { color: #FFB3D5; }
-.card.hello { background: #FFE8F0; border-color: var(--warmpink); }
+.tagline { color: #C8D6E6; }
+.card.hello { background: #E3EBF4; border-color: var(--warmpink); }
 .plan-day, .card.olive { border-color: var(--sand); }
 .extra-col .count, .badge { background: var(--sand); color: var(--garnet); }
-.pbar .track { background: #FFE3E9; }
+.pbar .track { background: #EFE7C4; }
 .fact { border-left-color: var(--cherry); }
-.est, .have-tag, .ing em { background: #FFD2D9; }
+.est, .have-tag, .ing em { background: #F5EFC6; }
 
 /* ---------- Mauve / Slate / Greige / Oxblood / Near-black ---------- */
-:root { --brown-card: #741D28; --on-brown: #FFF4F6; --on-brown-soft: #FFD2D9; }
-.top { background: #741D28; border-bottom-color: #FF88BE; }
-.tabs button.on { background: var(--bg); color: #741D28; }
-.entries .tag { background: #B9AC39; color: #741D28; }
-.extra-col .count, .badge { background: #FF88BE; color: #FFF4F6; }
-.card.brown .btn:not(.ghost) { background: #FF88BE; color: #FFF4F6; }
-.card.brown .btn:not(.ghost):hover { background: #E0679F; }
-.btn.soft { background: #FF88BE; color: #FFF4F6; }
-.btn.soft:hover { background: #E0679F; }
-.card.olive .chip.on { background: #B9AC39; color: #741D28; border-color: #B9AC39; }
-.chip.on { color: #FFF4F6; }
-.card.brown .chip.on, .pantry-chips .chip, .extra-col .chip.on { color: #741D28; }
-.pitem.recipe { color: #FFF4F6; }
-.pitem.recipe .x { color: #FFF4F6; }
-footer { color: #741D28; }
-.logo { width: 58px; height: 58px; color: #FFF4F6; }
+:root { --brown-card: #4D0E12; --on-brown: #FCF9E8; --on-brown-soft: #F5EFC6; }
+.top { background: #4D0E12; border-bottom-color: #A5BCD6; }
+.tabs button.on { background: var(--bg); color: #4D0E12; }
+.entries .tag { background: #4A2E27; color: #4D0E12; }
+.extra-col .count, .badge { background: #A5BCD6; color: #FCF9E8; }
+.card.brown .btn:not(.ghost) { background: #A5BCD6; color: #FCF9E8; }
+.card.brown .btn:not(.ghost):hover { background: #7F9AB8; }
+.btn.soft { background: #A5BCD6; color: #FCF9E8; }
+.btn.soft:hover { background: #7F9AB8; }
+.card.olive .chip.on { background: #4A2E27; color: #4D0E12; border-color: #4A2E27; }
+.chip.on { color: #FCF9E8; }
+.card.brown .chip.on, .pantry-chips .chip, .extra-col .chip.on { color: #4D0E12; }
+.pitem.recipe { color: #FCF9E8; }
+.pitem.recipe .x { color: #FCF9E8; }
+footer { color: #4D0E12; }
+.logo { width: 58px; height: 58px; color: #FCF9E8; }
 
 /* ---------- Brique / Rose sorbet / Abricot / Blush / Pistache ---------- */
-.top { border-bottom-color: #F08A59; }
-.extra-col .count, .badge { background: #F08A59; color: #741D28; }
-.card.brown .btn:not(.ghost), .btn.soft { background: #FF88BE; color: #741D28; }
-.card.brown .btn:not(.ghost):hover, .btn.soft:hover { background: #FF9FCB; }
-.chip.on, .pitem.recipe, .pitem.recipe .x { color: #741D28; }
-.card.olive .chip.on { color: #741D28; }
-.card.hello { border-color: #FF88BE; }
-.btn.ghost { border-color: #B9AC39; }
-.dot.snack { background: #FF88BE; border-color: #741D28; }
+.top { border-bottom-color: #C9A46B; }
+.extra-col .count, .badge { background: #C9A46B; color: #4D0E12; }
+.card.brown .btn:not(.ghost), .btn.soft { background: #A5BCD6; color: #4D0E12; }
+.card.brown .btn:not(.ghost):hover, .btn.soft:hover { background: #B9CBE0; }
+.chip.on, .pitem.recipe, .pitem.recipe .x { color: #4D0E12; }
+.card.olive .chip.on { color: #4D0E12; }
+.card.hello { border-color: #A5BCD6; }
+.btn.ghost { border-color: #4A2E27; }
+.dot.snack { background: #A5BCD6; border-color: #4D0E12; }
+
+/* ---------- Cream / Sceptre Red / Cerulean / Potting Soil / Java ---------- */
+:root { --ink: #231815; --garnet: #231815; --brown-card: #4A2E27; --on-brown: #FCF9E8; --on-brown-soft: #E9DFC9; }
+body { color: #231815; }
+.top { background: #4D0E12; border-bottom-color: #A5BCD6; }
+.btn:not(.ghost):not(.soft) { background: #4D0E12; color: #FCF9E8; }
+.btn:not(.ghost):not(.soft):hover { background: #360A0D; }
+.seg button.on { background: #4D0E12; color: #FCF9E8; }
+.card.hello { background: #E3EBF4; border-color: #A5BCD6; }
+.entries .tag { background: #A5BCD6; color: #231815; }
+.card.brown .tag.meal { background: #A5BCD6; color: #231815; }
+.extra-col .count, .badge { background: #4A2E27; color: #F5EFC6; }
+.card.brown .btn:not(.ghost), .btn.soft { background: #A5BCD6; color: #231815; }
+.card.brown .btn:not(.ghost):hover, .btn.soft:hover { background: #B9CBE0; }
+.chip.on, .pitem.recipe, .pitem.recipe .x { color: #231815; }
+.card.olive .chip.on { background: #4A2E27; color: #FCF9E8; border-color: #4A2E27; }
+.btn.ghost { border-color: #4A2E27; color: #231815; }
+.dot.snack { background: #A5BCD6; border-color: #231815; }
+.fact { border-left-color: #4D0E12; }
+.dish .need { color: #4D0E12; }
