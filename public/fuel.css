@@ -1235,3 +1235,17 @@ body.mag[data-theme="draper"] { background-color: #F6EADF; }
   .mag-hero::after { left: 60%; top: 14px; width: 36px; height: 36px; }
   .mag .card h2 { font-size: 1.5rem; }
 }
+
+/* favorites + install */
+.favs { margin: 4px 0 14px; padding-bottom: 12px; border-bottom: 1px dashed currentColor; }
+.favs .lbl { margin-top: 0; }
+.fav-chip { display: inline-flex; align-items: center; }
+.mag .card.brown .chip.fav { background: var(--m-pink); color: var(--m-ink); border-color: var(--m-pink); text-transform: none; letter-spacing: 0; font-family: "DM Sans", sans-serif; font-size: .88rem; font-weight: 700; }
+.fav-chip .x { font: inherit; background: none; border: 0; color: inherit; cursor: pointer; padding: 0 6px; opacity: .8; }
+.fav-empty { margin: 0; }
+.log-actions { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; margin-top: 16px; }
+.log-actions .btn { margin-top: 0; }
+.mag .card.brown .btn.ghost { color: var(--m-cream); border-color: var(--m-cream); }
+.fav-from { font-size: 1rem; }
+.install-steps { padding-left: 20px; margin: 6px 0; }
+.install-steps li { margin-bottom: 4px; }

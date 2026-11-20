@@ -571,7 +571,7 @@
     applyTheme();
     document.body.classList.toggle('no-cal', !state.settings.calories);
     $('#cal-toggle').checked = state.settings.calories;
-    renderToday(); renderWeek(); renderRecipe(); renderLearn(); renderFoods(); renderPlan(); renderPlannedToday(); renderIdeas(); renderPantry(); renderExtras();
+    renderToday(); renderWeek(); renderRecipe(); renderLearn(); renderFoods(); renderPlan(); renderPlannedToday(); renderIdeas(); renderPantry(); renderExtras(); renderFavs(); renderInstall();
     sketchify(document.body);
   }
 
@@ -599,6 +599,7 @@
     const cal = state.settings.calories && e.cal ? ' <span class="muted">· ≈' + e.cal + ' cal</span>' : '';
     return '<li><span class="time">' + fmtTime(e.ts) + '</span><span class="what"><span class="tag ' + e.type + '">' + (e.type === 'meal' ? 'Meal' : 'Snack') + '</span>'
       + esc(e.foods.map(f => f.name).join(', ')) + cal + (e.note ? '<br><span class="muted">' + esc(e.note) + '</span>' : '') + '</span>'
+      + '<button class="del fav-from" data-fav-entry="' + e.id + '" aria-label="Save as favorite" title="Save as a favorite meal">☆</button>'
       + '<button class="del" data-del="' + e.id + '" aria-label="Delete entry" title="Delete">×</button></li>';
   }
 
@@ -1561,6 +1562,71 @@
     });
   }
   buildHeroes();
+
+  /* ===============================================================
+     FAVORITE MEALS: save a combo, log it with one tap
+     =============================================================== */
+  function renderFavs() {
+    const favs = state.favorites || [];
+    $('#favs').innerHTML = '<p class="lbl">★ Favorites <span class="muted">' + (favs.length ? '(tap to log it right now)' : '') + '</span></p>'
+      + (favs.length ? '<div class="chips">' + favs.map(f => '<span class="fav-chip"><button type="button" class="chip fav" data-fav-log="' + f.id + '" title="' + esc(f.foods.map(x => x.name).join(', ')) + '">'
+          + (f.type === 'snack' ? '🍓 ' : '🍽 ') + esc(f.name) + '</button><button type="button" class="x" data-fav-del="' + f.id + '" aria-label="Remove favorite ' + esc(f.name) + '">×</button></span>').join('') + '</div>'
+        : '<p class="muted fav-empty">Pick foods below and tap <b>☆ Save as favorite</b>, or tap ☆ on anything in your history.</p>');
+    sketchify($('#favs'));
+  }
+  function addFavorite(foods, type) {
+    if (!foods.length) { alert('Pick at least one food first 💛'); return; }
+    const suggested = foods.map(f => f.name).join(' + ');
+    const name = prompt('Name this favorite:', suggested.length > 40 ? suggested.slice(0, 40) + '…' : suggested);
+    if (name === null) return;
+    state.favorites = state.favorites || [];
+    state.favorites.push({ id: uid(), name: name.trim() || suggested, type, foods: foods.map(f => ({ name: f.name, groups: f.groups.slice(), cal: f.cal || 0 })) });
+    save(); renderFavs();
+  }
+  $('#fav-save').addEventListener('click', () => {
+    const foods = state.foods.filter(f => selected.has(f.id)).map(f => ({ name: f.name, groups: f.groups.slice(), cal: f.cal || 0 })).concat(extras);
+    const before = (state.favorites || []).length;
+    addFavorite(foods, logType);
+    if ((state.favorites || []).length > before) { selected = new Set(); extras = []; calTouched = false; renderPicker(); }
+  });
+  document.addEventListener('click', (ev) => {
+    const lg = ev.target.closest('[data-fav-log]');
+    if (lg) {
+      const f = (state.favorites || []).find(x => x.id === lg.dataset.favLog); if (!f) return;
+      const cal = f.foods.reduce((n, x) => n + (x.cal || 0), 0);
+      const entry = { id: uid(), ts: new Date().toISOString(), type: f.type, foods: f.foods.map(x => Object.assign({}, x, { groups: x.groups.slice() })),
+        cal: state.settings.calories ? (cal || null) : null, note: '★ ' + f.name };
+      state.entries.push(entry); save(); render(); showCheer(entry); return;
+    }
+    const del = ev.target.closest('[data-fav-del]');
+    if (del) { state.favorites = (state.favorites || []).filter(x => x.id !== del.dataset.favDel); save(); renderFavs(); return; }
+    const fe = ev.target.closest('[data-fav-entry]');
+    if (fe) { const e = state.entries.find(x => x.id === fe.dataset.favEntry); if (e) addFavorite(e.foods, e.type); }
+  });
+
+  /* ===============================================================
+     INSTALL AS AN APP (Add to Home Screen)
+     =============================================================== */
+  let installPrompt = null;
+  const standalone = () => window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone === true;
+  function renderInstall() {
+    const box = $('#install-box'); if (!box) return;
+    const ua = navigator.userAgent, ios = /iPhone|iPad|iPod/.test(ua) || (/Macintosh/.test(ua) && 'ontouchend' in document);
+    if (standalone()) { box.innerHTML = '<p class="tip">✨ You\'re using the app version. Nice!</p>'; return; }
+    if (installPrompt) { box.innerHTML = '<p class="muted">Install it like an app: its own icon, full screen, works offline.</p><button type="button" class="btn" id="install-btn">Install Gentle Plate</button>'; return; }
+    box.innerHTML = ios
+      ? '<ol class="install-steps"><li>Open this page in <b>Safari</b>.</li><li>Tap the <b>Share</b> button (square with an arrow).</li><li>Scroll and tap <b>Add to Home Screen</b>, then <b>Add</b>.</li></ol><p class="muted">It opens full screen with the Gentle Plate icon and works offline. Your logs stay the same as in Safari\'s copy the first time only, so start logging from the app.</p>'
+      : '<ol class="install-steps"><li>Open this page in <b>Chrome</b>.</li><li>Tap the <b>⋮</b> menu.</li><li>Tap <b>Add to Home screen</b> or <b>Install app</b>.</li></ol><p class="muted">It opens full screen with the Gentle Plate icon and works offline.</p>';
+  }
+  window.addEventListener('beforeinstallprompt', (e) => { e.preventDefault(); installPrompt = e; renderInstall(); });
+  window.addEventListener('appinstalled', () => { installPrompt = null; renderInstall(); });
+  document.addEventListener('click', async (ev) => {
+    if (ev.target.id !== 'install-btn' || !installPrompt) return;
+    installPrompt.prompt(); await installPrompt.userChoice; installPrompt = null; renderInstall();
+  });
+  if ('serviceWorker' in navigator && location.protocol.startsWith('http')) {
+    window.addEventListener('load', () => navigator.serviceWorker.register('sw.js').catch(() => {}));
+  }
 
   render();
   routeHash();
