@@ -100,8 +100,16 @@
             <button type="button" data-meal="snack">Snack</button>
           </div>
 
-          <label class="lbl" for="log-time">When</label>
+          <label class="lbl" for="log-time">When <span class="muted">(missed one? pick an earlier time or day)</span></label>
+          <div class="chips when-quick" role="group" aria-label="Quick times">
+            <button type="button" class="chip" data-when="now">Just now</button>
+            <button type="button" class="chip" data-when="morning">This morning</button>
+            <button type="button" class="chip" data-when="lunch">Lunchtime</button>
+            <button type="button" class="chip" data-when="evening">This evening</button>
+            <button type="button" class="chip" data-when="yesterday">Yesterday</button>
+          </div>
           <input type="datetime-local" id="log-time" required>
+          <p class="past-note" id="past-note" hidden></p>
 
           <p class="lbl">What did you have? <span class="muted">(tap all that apply)</span></p>
           <div class="chips" id="pick-foods"></div>

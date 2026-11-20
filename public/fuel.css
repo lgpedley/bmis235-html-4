@@ -1339,3 +1339,12 @@ body.mag[data-theme="bubblegum"] { --p-bg: #FBE4EE; }
 @media (prefers-reduced-motion: reduce) { .slot.flash { animation: none; } }
 .meal-pick { flex-wrap: wrap; }
 .meal-pick button { padding: 6px 12px; }
+
+.when-quick { margin-bottom: 8px; gap: 6px; }
+.when-quick .chip { font-size: .68rem; padding: 4px 10px; }
+.past-note { margin: 8px 0 0; font-family: "Caveat", cursive; font-size: 1.3rem; color: #F3B3D3; }
+.day-block { border-top: 1px solid rgba(255,255,255,.25); padding-top: 6px; margin-top: 8px; }
+.day-head-row { display: flex; justify-content: space-between; align-items: center; gap: 10px; flex-wrap: wrap; }
+.day-head-row .day-head { margin: 8px 0; }
+.day-head-row .btn { margin-top: 0; }
+.empty-day { margin: 0 0 6px; font-style: italic; }

@@ -655,11 +655,13 @@
     state.entries.slice().sort((a, b) => new Date(b.ts) - new Date(a.ts)).forEach(e => {
       const k = dayKey(e.ts); (byDay[k] = byDay[k] || []).push(e);
     });
-    const keys = Object.keys(byDay).slice(0, 14);
-    $('#history').innerHTML = keys.length ? keys.map(k => {
-      const list = byDay[k].slice().reverse();
-      return '<p class="day-head">' + fmtDay(list[0].ts) + '</p><ul class="entries">' + list.map(entryRow).join('') + '</ul>';
-    }).join('') : '<p class="muted">Your logs will show up here.</p>';
+    const recent = last7().reverse();   // today first
+    const older = Object.keys(byDay).filter(k => !recent.some(d => dayKey(d) === k)).slice(0, 10);
+    const dayBlock = (d, list) => '<div class="day-block"><div class="day-head-row"><p class="day-head">' + fmtDay(d) + (dayKey(d) === dayKey(new Date()) ? ' <span class="muted">(today)</span>' : '') + '</p>'
+      + '<button type="button" class="btn small ghost inline" data-log-for="' + isoDate(new Date(d)) + '">+ Add a missed meal</button></div>'
+      + (list.length ? '<ul class="entries">' + list.map(entryRow).join('') + '</ul>' : '<p class="muted empty-day">Nothing logged. If you ate and forgot, you can add it.</p>') + '</div>';
+    $('#history').innerHTML = recent.map(d => dayBlock(d, (byDay[dayKey(d)] || []).slice().reverse())).join('')
+      + older.map(k => { const list = byDay[k].slice().reverse(); return dayBlock(new Date(list[0].ts), list); }).join('');
   }
 
   function weekNumber() {
@@ -729,7 +731,36 @@
   document.querySelectorAll('.meal-pick button').forEach(b => b.addEventListener('click', () => setLogMeal(b.dataset.meal, true)));
   setLogMeal(logMeal);
   // until you pick one, the meal follows the time you enter
-  $('#log-time').addEventListener('change', () => { if (!mealPicked && $('#log-time').value) setLogMeal(mealForTime(new Date($('#log-time').value))); });
+  $('#log-time').addEventListener('change', () => { if (!mealPicked && $('#log-time').value) setLogMeal(mealForTime(new Date($('#log-time').value))); updatePastNote(); });
+  function setLogTime(d) {
+    $('#log-time').value = localInputValue(d);
+    if (!mealPicked) setLogMeal(mealForTime(d));
+    updatePastNote();
+  }
+  function updatePastNote() {
+    const v = $('#log-time').value, n = $('#past-note'); if (!n) return;
+    const d = v ? new Date(v) : new Date(), mins = (Date.now() - d) / 60000;
+    document.querySelectorAll('.when-quick .chip').forEach(c => c.classList.remove('on'));
+    if (mins > 45) { n.hidden = false; n.textContent = '🕒 Logging for ' + fmtDay(d) + ' at ' + fmtTime(d) + '. Thanks for filling it in!'; sketchify(n); }
+    else if (mins < -5) { n.hidden = false; n.textContent = 'That time is in the future. Did you mean an earlier time?'; }
+    else n.hidden = true;
+  }
+  document.querySelectorAll('[data-when]').forEach(b => b.addEventListener('click', () => {
+    const d = new Date(), w = b.dataset.when;
+    if (w === 'morning') d.setHours(8, 30, 0, 0);
+    else if (w === 'lunch') d.setHours(12, 30, 0, 0);
+    else if (w === 'evening') d.setHours(18, 30, 0, 0);
+    else if (w === 'yesterday') { d.setDate(d.getDate() - 1); d.setHours(12, 30, 0, 0); }
+    setLogTime(d); b.classList.add('on');
+  }));
+  document.addEventListener('click', (ev) => {
+    const lf = ev.target.closest('[data-log-for]'); if (!lf) return;
+    const d = new Date(lf.dataset.logFor + 'T12:30');
+    document.querySelector('.tabs button[data-tab="today"]').click();
+    setLogTime(d);
+    $('#log-form').scrollIntoView({ behavior: 'smooth', block: 'start' });
+    setTimeout(() => $('#log-time').focus(), 400);
+  });
 
   $('#pick-foods').addEventListener('click', (ev) => {
     const c = ev.target.closest('.chip'); if (!c) return;
@@ -759,7 +790,7 @@
     state.entries.push(entry); save();
     selected = new Set(); extras = []; calTouched = false;
     $('#log-note').value = ''; $('#log-time').value = localInputValue(new Date());
-    setLogMeal(mealForTime(new Date()), false);
+    setLogMeal(mealForTime(new Date()), false); updatePastNote();
     render();
     showCheer(entry);
   });
