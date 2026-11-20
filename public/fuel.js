@@ -455,7 +455,7 @@
      Charts (inline SVG)
      --------------------------------------------------------------- */
   const SVGNS = 'http://www.w3.org/2000/svg';
-  const C = { meal: '#50050E', snack: '#EDB2D4', grid: '#E6D9A6', band: '#F4E9BC', bar: '#87872D', goal: '#A00721', card: '#FCF4D2', empty: '#FFFAE6', plateLo: '#EDEDD3', plateHi: '#C2C287' };
+  const C = { meal: '#503429', snack: '#D58198', grid: '#DDD3BC', band: '#EFE8D3', bar: '#515335', goal: '#AE5369', card: '#FBF7EE', empty: '#F8F4EA', plateLo: '#E6E5D8', plateHi: '#A9AA8C' };
 
   // Timeline: rows of days, x = hour of day
   function scheduleSVG(days, rowLabels) {
@@ -496,7 +496,7 @@
     let s = '<svg class="chart" viewBox="0 0 ' + W + ' ' + H + '" role="img" aria-label="Food groups this week">';
     keys.forEach((k, i) => {
       const g = GROUPS[k], y = top + rowH * i + (rowH - barH) / 2, v = counts[k];
-      s += '<use href="#i-' + GROUP_ICON[k] + '" x="0" y="' + (y - 3) + '" width="24" height="24" style="color:#50050E"/>';
+      s += '<use href="#i-' + GROUP_ICON[k] + '" x="0" y="' + (y - 3) + '" width="24" height="24" style="color:#503429"/>';
       s += '<text class="lab" x="30" y="' + (y + barH - 4) + '">' + esc(g.label) + '</text>';
       s += '<rect x="' + left + '" y="' + y + '" width="' + (W - left - right) + '" height="' + barH + '" fill="' + C.band + '" rx="4"/>';
       if (v > 0) s += '<rect x="' + left + '" y="' + y + '" width="' + Math.max(4, x(v) - left) + '" height="' + barH + '" fill="' + C.bar + '" rx="4"/>';
@@ -528,7 +528,7 @@
       const v = levels[g] || 0, G = GROUPS[g], on = v > 0;
       const tip = G.label + (labels && labels[g] ? ': ' + labels[g] : on ? ': yes!' : ': not yet');
       return '<g class="hit" data-tip="' + esc(tip) + '">' + shape(fill(v), on)
-        + '<use href="#i-' + GROUP_ICON[g] + '" x="' + (x - 14) + '" y="' + (y - 22) + '" width="28" height="28" opacity="' + (on ? 1 : .45) + '" style="color:#50050E"/>'
+        + '<use href="#i-' + GROUP_ICON[g] + '" x="' + (x - 14) + '" y="' + (y - 22) + '" width="28" height="28" opacity="' + (on ? 1 : .45) + '" style="color:#503429"/>'
         + '<text class="plab" x="' + x + '" y="' + (y + 22) + '" text-anchor="middle">' + esc(labels && labels[g] ? labels[g] : G.label.split(' ')[0]) + '</text></g>';
     };
     parts.forEach(([g, a0, a1]) => {
