@@ -236,8 +236,9 @@
             <label class="lbl" for="food-group">Food group</label>
             <select id="food-group"></select>
             <div class="cal-only">
-              <label class="lbl" for="food-cal">Calories per serving <span class="muted">(rough guess is fine)</span></label>
-              <input type="number" id="food-cal" min="0" placeholder="optional">
+              <label class="lbl" for="food-cal">Calories per serving <span class="muted">(leave blank and I'll estimate)</span></label>
+              <input type="number" id="food-cal" min="0" placeholder="auto-estimated">
+              <p class="cal-hint" id="food-cal-hint" aria-live="polite"></p>
             </div>
             <button type="submit" class="btn">Add food</button>
           </form>

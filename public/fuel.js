@@ -222,6 +222,73 @@
   }
 
   /* ---------------------------------------------------------------
+     Calorie estimates for a typical serving (rounded, based on USDA
+     FoodData Central). The most specific match wins, so "sweet potato
+     fries" beats "fries" and "string cheese" beats "cheese".
+     [keyword, calories, group, serving]
+     --------------------------------------------------------------- */
+  const CAL_DB = [
+    // fruit
+    ['apple', 95, 'fruit', '1 medium apple'], ['banana', 105, 'fruit', '1 medium banana'], ['strawberr', 50, 'fruit', '1 cup'],
+    ['grape', 105, 'fruit', '1 cup'], ['clementine', 35, 'fruit', '1 clementine'], ['mandarin', 35, 'fruit', '1 mandarin'],
+    ['orange', 60, 'fruit', '1 medium orange'], ['watermelon', 45, 'fruit', '1 cup'], ['melon', 55, 'fruit', '1 cup'],
+    ['blueberr', 85, 'fruit', '1 cup'], ['raspberr', 65, 'fruit', '1 cup'], ['pineapple', 80, 'fruit', '1 cup'],
+    ['mango', 100, 'fruit', '1 cup'], ['peach', 60, 'fruit', '1 medium peach'], ['pear', 100, 'fruit', '1 medium pear'],
+    ['cherr', 95, 'fruit', '1 cup'], ['applesauce', 50, 'fruit', '1 pouch'], ['fruit', 80, 'fruit', '1 cup'],
+    ['juice', 110, 'fruit', '8 oz glass'],
+    // veggies
+    ['sweet potato fries', 160, 'veg', '3 oz'], ['sweet potato', 115, 'veg', '1 medium'], ['broccoli', 30, 'veg', '1 cup'],
+    ['carrot', 30, 'veg', '½ cup'], ['cucumber', 15, 'veg', '1 cup slices'], ['green bean', 35, 'veg', '1 cup'],
+    ['pea', 60, 'veg', '½ cup'], ['corn', 90, 'veg', '1 ear'], ['spinach', 20, 'veg', '½ cup cooked'],
+    ['cauliflower', 25, 'veg', '1 cup'], ['salad', 20, 'veg', '2 cups greens'], ['lettuce', 10, 'veg', '1 cup'],
+    ['tomato', 20, 'veg', '1 medium'], ['pepper', 30, 'veg', '1 medium'], ['onion', 45, 'veg', '1 medium'],
+    ['mushroom', 15, 'veg', '1 cup'], ['zucchini', 20, 'veg', '1 cup'], ['pickle', 5, 'veg', '1 spear'],
+    ['tater tot', 160, 'carbs', '9 tots'], ['hash brown', 150, 'carbs', '1 patty'], ['mashed potato', 210, 'carbs', '1 cup'],
+    ['fries', 320, 'carbs', '1 medium serving'], ['potato', 160, 'carbs', '1 medium'],
+    // carbs & grains
+    ['garlic bread', 150, 'carbs', '1 slice'], ['grilled cheese', 400, 'carbs', '1 sandwich'], ['mac', 380, 'carbs', '1 cup'],
+    ['butter noodle', 300, 'carbs', '1 cup'], ['noodle', 220, 'carbs', '1 cup cooked'], ['pasta', 220, 'carbs', '1 cup cooked'],
+    ['spaghetti', 220, 'carbs', '1 cup cooked'], ['toast', 80, 'carbs', '1 slice'], ['bread', 80, 'carbs', '1 slice'],
+    ['bagel', 270, 'carbs', '1 bagel'], ['english muffin', 130, 'carbs', '1 muffin'], ['tortilla', 140, 'carbs', '1 large tortilla'],
+    ['cracker', 130, 'carbs', '1 serving (about 15)'], ['rice', 205, 'carbs', '1 cup cooked'], ['quinoa', 220, 'carbs', '1 cup cooked'], ['couscous', 175, 'carbs', '1 cup cooked'], ['oat', 150, 'carbs', '1 cup cooked'],
+    ['cereal', 150, 'carbs', '1 cup'], ['granola bar', 120, 'carbs', '1 bar'], ['granola', 200, 'carbs', '½ cup'],
+    ['waffle', 200, 'carbs', '2 frozen waffles'], ['pancake', 180, 'carbs', '2 small'], ['muffin', 350, 'carbs', '1 muffin'],
+    ['croissant', 230, 'carbs', '1 croissant'], ['biscuit', 180, 'carbs', '1 biscuit'], ['bun', 140, 'carbs', '1 bun'],
+    ['pizza', 285, 'carbs', '1 slice'], ['quesadilla', 450, 'carbs', '1 quesadilla'], ['burrito', 550, 'carbs', '1 burrito'],
+    ['taco', 200, 'carbs', '1 taco'], ['sandwich', 350, 'carbs', '1 sandwich'], ['soup', 150, 'veg', '1 cup'],
+    // protein
+    ['cheeseburger', 550, 'protein', '1 burger'], ['burger', 250, 'protein', '1 patty'], ['ground beef', 250, 'protein', '4 oz cooked'],
+    ['beef', 250, 'protein', '4 oz cooked'], ['steak', 320, 'protein', '6 oz'], ['salmon', 230, 'protein', '4 oz'],
+    ['tuna', 100, 'protein', '3 oz can'], ['shrimp', 85, 'protein', '3 oz'], ['cod', 90, 'protein', '3 oz'], ['fish', 150, 'protein', '4 oz'],
+    ['egg', 140, 'protein', '2 eggs'], ['peanut butter', 190, 'protein', '2 tbsp'], ['meatball', 180, 'protein', '3 meatballs'],
+    ['turkey', 170, 'protein', '4 oz ground'], ['pork', 200, 'protein', '1 chop'], ['bacon', 90, 'protein', '2 slices'],
+    ['sausage', 190, 'protein', '2 links'], ['hot dog', 150, 'protein', '1 hot dog'], ['bean', 115, 'protein', '½ cup'],
+    ['tofu', 90, 'protein', '3 oz'], ['almond', 165, 'protein', '1 oz'], ['nut', 170, 'protein', '1 oz'], ['hummus', 70, 'protein', '2 tbsp'],
+    ['protein bar', 200, 'protein', '1 bar'],
+    // dairy
+    ['chocolate milk', 200, 'dairy', '1 cup'], ['milkshake', 500, 'fun', '1 medium'], ['milk', 120, 'dairy', '1 cup'],
+    ['string cheese', 80, 'dairy', '1 stick'], ['parmesan', 20, 'dairy', '1 tbsp'], ['mozzarella', 85, 'dairy', '1 oz'],
+    ['cream cheese', 100, 'dairy', '2 tbsp'], ['alfredo', 110, 'dairy', '¼ cup sauce'], ['rosatella', 100, 'dairy', '½ cup sauce'],
+    ['cheese', 115, 'dairy', '1 oz'], ['butter', 100, 'dairy', '1 tbsp'], ['smoothie', 250, 'fruit', '12 oz'],
+    // fun foods & extras
+    ['hot cheeto', 170, 'fun', '1 oz bag'], ['cheeto', 160, 'fun', '1 oz'], ['chip', 150, 'fun', '1 oz'], ['pretzel', 110, 'fun', '1 oz'],
+    ['popcorn', 100, 'fun', '3 cups'], ['cookie', 150, 'fun', '2 cookies'], ['brownie', 230, 'fun', '1 brownie'], ['chocolate', 210, 'fun', '1 bar'],
+    ['candy', 200, 'fun', '1 pack'], ['ice cream', 140, 'fun', '½ cup'], ['donut', 250, 'fun', '1 donut'], ['cake', 350, 'fun', '1 slice'],
+    ['soda', 150, 'fun', '12 oz can'], ['marinara', 70, 'veg', '½ cup sauce'], ['pizza sauce', 30, 'veg', '¼ cup'],
+    ['sauce', 80, 'dairy', '¼ cup'], ['ranch', 130, 'fun', '2 tbsp'], ['ketchup', 20, 'fun', '1 tbsp'], ['mayo', 90, 'fun', '1 tbsp']
+  ].sort((a, b) => b[0].length - a[0].length);
+  const GROUP_CAL_GUESS = { carbs: 150, protein: 200, veg: 40, fruit: 80, dairy: 110, fun: 160 };
+
+  // Returns { cal, group, serving, sure } for a food name (sure = false when it's only a group-based guess)
+  function estimateCal(name, group) {
+    const n = String(name || '').toLowerCase();
+    const hit = n && CAL_DB.find(([k]) => n.includes(k));
+    if (hit) return { cal: hit[1], group: hit[2], serving: hit[3], sure: true };
+    const g = group || 'carbs';
+    return { cal: GROUP_CAL_GUESS[g] || 120, group: g, serving: 'a typical serving', sure: false };
+  }
+
+  /* ---------------------------------------------------------------
      Storage
      --------------------------------------------------------------- */
   const KEY = 'fuelup.v1';
@@ -232,6 +299,7 @@
       const s = JSON.parse(localStorage.getItem(KEY));
       if (s && Array.isArray(s.foods) && Array.isArray(s.entries)) {
         s.settings = Object.assign({ calories: true }, s.settings);
+        s.foods.forEach(f => { if (!f.cal) { const e = estimateCal(f.name, f.groups[0]); f.cal = e.cal; f.calEst = true; } });
         return s;
       }
     } catch (e) { /* ignore */ }
@@ -619,7 +687,7 @@
   function renderFoods() {
     $('#food-list').innerHTML = state.foods.map(f =>
       '<li><span class="name">' + esc(f.name) + '</span><span class="muted">' + f.groups.map(g => GROUPS[g].emoji).join(' ')
-      + (f.cal ? '<span class="cal-only"> · ≈' + f.cal + ' cal</span>' : '') + '</span>'
+      + (f.cal ? '<span class="cal-only"> · ≈' + f.cal + ' cal' + (f.calEst ? ' <i class="est" data-tip="Estimated from a typical serving. Type your own number when you add a food to override it.">est.</i>' : '') + '</span>' : '') + '</span>'
       + '<button class="del" data-remove-food="' + f.id + '" aria-label="Remove ' + esc(f.name) + '" title="Remove">×</button></li>').join('')
       || '<li class="muted">No foods yet. Add some!</li>';
   }
@@ -651,8 +719,8 @@
 
   $('#other-add').addEventListener('click', () => {
     const name = $('#other-name').value.trim(); if (!name) return;
-    extras.push({ name, groups: [$('#other-group').value], cal: +$('#other-cal').value || 0 });
-    $('#other-name').value = ''; $('#other-cal').value = '';
+    extras.push({ name, groups: [$('#other-group').value], cal: +$('#other-cal').value || estimateCal(name, $('#other-group').value).cal });
+    $('#other-name').value = ''; $('#other-cal').value = ''; otherEst.reset();
     renderPicker();
   });
   $('#log-cal').addEventListener('input', () => { calTouched = true; });
@@ -682,11 +750,34 @@
     if (ev.target.id === 'next-recipe') { state.recipeOffset = (state.recipeOffset || 0) + 1; save(); renderRecipe(); sketchify($('#recipe')); }
   });
 
+  // Live calorie estimate while typing a new food
+  function wireEstimate(nameSel, groupSel, calSel, hintSel) {
+    let groupTouched = false;
+    $(groupSel).addEventListener('change', () => { groupTouched = true; update(); });
+    function update() {
+      const name = $(nameSel).value.trim(), hint = hintSel && $(hintSel);
+      if (!name) { $(calSel).placeholder = hintSel ? 'auto-estimated' : 'cal'; if (hint) hint.innerHTML = ''; groupTouched = false; return; }
+      let e = estimateCal(name, groupTouched ? $(groupSel).value : null);
+      if (!groupTouched) $(groupSel).value = e.sure ? e.group : 'carbs';   // undo an earlier auto-pick when there's no match
+      if (!e.sure) e = estimateCal(name, $(groupSel).value);
+      $(calSel).placeholder = '≈ ' + e.cal;
+      if (hint) hint.innerHTML = e.sure
+        ? '🔥 Estimated <b>≈ ' + e.cal + ' cal</b> for ' + esc(e.serving) + '. Type a number above to use your own.'
+        : '🔥 No exact match, so a rough guess for ' + esc(GROUPS[e.group].label.toLowerCase()) + ': <b>≈ ' + e.cal + ' cal</b>. Type a number above to use your own.';
+      if (hint) sketchify(hint);
+    }
+    $(nameSel).addEventListener('input', update);
+    return { reset() { groupTouched = false; update(); } };
+  }
+  const foodEst = wireEstimate('#food-name', '#food-group', '#food-cal', '#food-cal-hint');
+  const otherEst = wireEstimate('#other-name', '#other-group', '#other-cal', null);
+
   $('#food-form').addEventListener('submit', (ev) => {
     ev.preventDefault();
     const name = $('#food-name').value.trim(); if (!name) return;
-    state.foods.push({ id: uid(), name, groups: [$('#food-group').value], cal: +$('#food-cal').value || 0 });
-    $('#food-name').value = ''; $('#food-cal').value = '';
+    const typed = +$('#food-cal').value, e = estimateCal(name, $('#food-group').value);
+    state.foods.push({ id: uid(), name, groups: [$('#food-group').value], cal: typed || e.cal, calEst: !typed });
+    $('#food-name').value = ''; $('#food-cal').value = ''; foodEst.reset();
     save(); render();
   });
 
@@ -761,7 +852,7 @@
     const bSide = pick(FIT.breakfast).filter(f => !fits(f, FIT.breakfastBase));
     const hiddenIdeas = state.hiddenIdeas || [];
     const bTry = BREAKFAST_TRY.filter(([n]) => !hiddenIdeas.some(h => h.toLowerCase().startsWith(n.toLowerCase().slice(0, 5))))
-      .map(([n, g]) => ({ kind: 'try', name: n, groups: [g], cal: 0, auto: true }));
+      .map(([n, g]) => ({ kind: 'try', name: n, groups: [g], cal: estimateCal(n, g).cal, auto: true }));
     const lMain = pick(FIT.lunchMain).filter(f => !/steak/i.test(f.name));
     const sides = pick(FIT.side);
     const snacks = pick(FIT.snack);
@@ -1120,7 +1211,7 @@
     const ms = ev.target.closest('[data-meal-shop]');
     if (ms) { const m = IDEA_MEALS.find(x => x.name === ms.dataset.mealShop); const n = addToShopping(m.shop); renderPlan(); sketchify($('#tab-plan')); flash(ms, '✓ Added ' + n + ' item' + (n === 1 ? '' : 's')); return; }
     const lk = ev.target.closest('[data-idea-like]');
-    if (lk) { const [n, g] = lk.dataset.ideaLike.split('|'); state.foods.push({ id: uid(), name: n, groups: [g], cal: 0 }); save(); render(); return; }
+    if (lk) { const [n, g] = lk.dataset.ideaLike.split('|'); state.foods.push({ id: uid(), name: n, groups: [g], cal: estimateCal(n, g).cal, calEst: true }); save(); render(); return; }
     const hd = ev.target.closest('[data-idea-hide]');
     if (hd) { state.hiddenIdeas = (state.hiddenIdeas || []).concat(hd.dataset.ideaHide); save(); renderIdeas(); sketchify($('#tab-ideas')); return; }
     if (ev.target.id === 'ideas-unhide') { state.hiddenIdeas = []; save(); renderIdeas(); sketchify($('#tab-ideas')); }
