@@ -364,7 +364,7 @@
      Charts (inline SVG)
      --------------------------------------------------------------- */
   const SVGNS = 'http://www.w3.org/2000/svg';
-  const C = { meal: '#5F0F40', snack: '#FB8B24', grid: '#F2D7BC', band: '#FFEFDD', bar: '#0F4C5C', goal: '#9A031E', card: '#FFFBF6', empty: '#FFF3E6', plateLo: '#DCEBEE', plateHi: '#8FBAC3' };
+  const C = { meal: '#793327', snack: '#F37F94', grid: '#EBD98F', band: '#FFEFAE', bar: '#42533E', goal: '#793327', card: '#FFF8DC', empty: '#FFF5CF', plateLo: '#E3E8DA', plateHi: '#A9B89F' };
 
   // Timeline: rows of days, x = hour of day
   function scheduleSVG(days, rowLabels) {
