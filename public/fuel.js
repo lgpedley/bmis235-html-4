@@ -176,10 +176,10 @@
       groups: ['protein', 'carbs', 'veg'], stretch: 'Add some shredded lettuce for crunch',
       ingredients: ['4 oz ground beef', 'Fries or cubed potatoes', 'Sliced pickles', 'Ketchup + mustard (or burger sauce)'],
       steps: ['Bake fries or roast potatoes until crispy.', 'Brown the beef in a pan with salt, pepper and garlic powder.', 'Pile fries in a bowl and top with the beef.', 'Finish with pickles and sauce.'] },
-    { name: 'Garlic Bread Steak Sandwich', needs: [['steak'], ['garlic bread', 'bread', 'toast']], cal: 520, mins: 20, fact: 'protein',
+    { name: 'Garlic Butter Steak Bites', needs: [['steak'], ['garlic bread', 'bread', 'toast', 'potato', 'fries']], cal: 540, mins: 20, fact: 'protein',
       groups: ['protein', 'carbs'], stretch: 'Add sautéed peppers or onions',
-      ingredients: ['4 oz steak, thinly sliced (leftovers are perfect)', 'Garlic bread (or bread + butter + garlic powder)', 'Pickles or a little steak sauce (optional)'],
-      steps: ['Toast the garlic bread until golden (or butter bread and sprinkle with garlic powder, then toast).', 'Quickly sear the steak slices 1–2 minutes in a hot pan.', 'Pile the steak on the garlic bread.', 'Add pickles or steak sauce if you like.'] },
+      ingredients: ['6 oz steak, cut into bite-size cubes', '1 tbsp butter + garlic', 'Garlic bread or crispy potatoes on the side'],
+      steps: ['Pat the steak cubes dry and season with salt and pepper.', 'Sear in a very hot pan 2–3 minutes, turning once, until browned.', 'Turn off the heat, add butter and garlic, and toss to coat.', 'Serve with garlic bread or crispy potatoes on the side.'] },
     { name: 'Loaded Broccoli Baked Potato', needs: [['potato'], ['broccoli']], cal: 360, mins: 15, fact: 'potato',
       groups: ['carbs', 'veg'], stretch: 'Top with a little chopped steak or salmon for protein',
       ingredients: ['1 large potato', '1 cup broccoli', 'Butter, salt', 'Parmesan (optional)'],
@@ -855,17 +855,37 @@
   const BREAKFAST_TRY = [['Eggs', 'protein'], ['Banana', 'fruit'], ['Strawberries', 'fruit'], ['Peanut butter', 'protein'], ['Milk', 'dairy']];
 
   // Auto-fill: replaces only slots that are empty or were auto-filled before; never touches what you added yourself
+  function rankedDishes(meal) {
+    const have = (req) => req.some(w => state.foods.some(f => f.name.toLowerCase().includes(w))) || pantryHas(req);
+    return PANTRY_DISHES.filter(dd => dd.meal === meal)
+      .map(dd => ({ dd, miss: dd.need.filter(req => !have(req)).length }))
+      .filter(x => x.miss <= 1)
+      .sort((a, b) => a.miss - b.miss || b.dd.need.length - a.dd.need.length)
+      .map(x => x.dd);
+  }
+  // one new automatic idea for a single plan box, different from what's already in the week
+  function rerollSlot(day, slot) {
+    const p = dayPlan(day);
+    const used = new Set(); planDays(planWeek).forEach(d => { const q = peekPlan(isoDate(d)); if (q) SLOTS.forEach(([k]) => q[k].forEach(it => used.add(it.name))); });
+    const current = new Set(p[slot].map(it => it.name));
+    const meal = { breakfast: 'Breakfast', lunch: 'Lunch', snack: 'Snack' }[slot];
+    let pool = meal ? rankedDishes(meal).map(dd => ({ dd, item: dishItem(dd) })) : eligibleRecipes().map(r => ({ item: Object.assign(recipeItem(r), { auto: true }) }));
+    if (slot === 'lunch') { const dn = eligibleRecipes().map(r => r.name.toLowerCase()); pool = pool.filter(x => !dn.includes(x.item.name.toLowerCase())); }
+    let fresh = pool.filter(x => !used.has(x.item.name));
+    if (!fresh.length) fresh = pool.filter(x => !current.has(x.item.name));
+    if (!fresh.length) return false;
+    state.rerollN = (state.rerollN || 0) + 1;
+    p[slot] = [fresh[state.rerollN % fresh.length].item];
+    p.logged = p.logged || {}; delete p.logged[slot];
+    save(); return true;
+  }
   function autofill(days) {
     state.fillSeed = (state.fillSeed || 0) + 1;
     const seed = state.fillSeed;
     const likedHas = (req) => req.some(w => state.foods.some(f => f.name.toLowerCase().includes(w)));
     const have = (req) => likedHas(req) || pantryHas(req);
     // rank recipes for a meal: ones you can fully make first, then ones missing just one thing
-    const ranked = (meal) => PANTRY_DISHES.filter(dd => dd.meal === meal)
-      .map(dd => ({ dd, miss: dd.need.filter(req => !have(req)).length }))
-      .filter(x => x.miss <= 1)
-      .sort((a, b) => a.miss - b.miss || b.dd.need.length - a.dd.need.length)
-      .map(x => x.dd);
+    const ranked = rankedDishes;
     const pickList = (list, n) => {   // n different picks, rotated by the shuffle seed
       if (!list.length) return [];
       const off = (seed * 3) % list.length;
@@ -939,7 +959,8 @@
         const items = p ? p[k] : [];
         return '<div class="slot"><div class="slot-name">' + ico(icon) + ' ' + label + (p && p.logged && p.logged[k] ? ' <span class="done">✓ eaten</span>' : '') + '</div>'
           + '<div class="slot-items">' + items.map((it, i) => itemTag(it, key, k, i)).join('') + '</div>'
-          + '<button class="add" data-plan-add="' + key + '|' + k + '">+ Add</button></div>';
+          + '<div class="slot-btns"><button class="add" data-plan-add="' + key + '|' + k + '">+ Add</button>'
+          + '<button class="add reroll" data-plan-reroll="' + key + '|' + k + '" title="Swap this box for a new idea">↻ New idea</button></div></div>';
       }).join('');
       const groupsRow = ['carbs', 'protein', 'veg', 'fruit', 'dairy'].map(g =>
         '<span class="gdot' + (have.has(g) ? ' on' : '') + '" data-tip="' + esc(GROUPS[g].label + (have.has(g) ? ': planned' : ': not planned yet')) + '">' + ico(GROUP_ICON[g]) + '</span>').join('');
@@ -1022,6 +1043,12 @@
   document.addEventListener('click', (ev) => {
     const add = ev.target.closest('[data-plan-add]');
     if (add) { const [day, slot] = add.dataset.planAdd.split('|'); openPicker(day, slot); return; }
+    const rr = ev.target.closest('[data-plan-reroll]');
+    if (rr) { const [day, slot] = rr.dataset.planReroll.split('|');
+      if (rerollSlot(day, slot)) { render(); const box = document.querySelector('[data-plan-reroll="' + rr.dataset.planReroll + '"]');
+        if (box) { const s = box.closest('.slot'); s.classList.remove('flash'); void s.offsetWidth; s.classList.add('flash'); } }
+      else alert('No other ideas for this meal right now. Add more foods you like to unlock more!');
+      return; }
     const un = ev.target.closest('[data-unplan]');
     if (un) { const [day, slot, i] = un.dataset.unplan.split('|'); dayPlan(day)[slot].splice(+i, 1); save(); render(); return; }
     const lp = ev.target.closest('[data-log-plan]');
@@ -1092,7 +1119,6 @@
     ['Cucumber slices', 'veg', ['crunchy', 'tangy'], 'pickle', 'Pickles are cucumbers! Fresh slices with salt are cool, crunchy and about 95% water (USDA).'],
     ['Shrimp', 'protein', ['seafood', 'garlic'], 'salmon', 'Garlic butter shrimp cooks in 5 minutes. 3 oz has about 20 g of protein (USDA).'],
     ['Eggs', 'protein', ['comfort', 'cheesy'], 'toast', 'Scrambled on toast makes an easy protein breakfast. 1 egg has about 6 g of protein (USDA).'],
-    ['Tuna', 'protein', ['seafood', 'cheesy'], 'grilled cheese', 'Great in a pasta salad with pickles. 3 oz has about 20 g of protein (USDA).'],
     ['Cod', 'protein', ['seafood', 'garlic'], 'salmon', 'A very mild white fish if you like salmon. 3 oz has about 19 g of protein (USDA).'],
     ['Peanut butter', 'protein', ['comfort', 'sweet'], 'toast', 'On toast with banana for breakfast. 2 tbsp has about 7 g of protein (USDA).'],
     ['String cheese', 'dairy', ['cheesy'], 'cheese', 'A grab-and-go snack with about 7 g of protein per stick (USDA).'],
@@ -1116,8 +1142,6 @@
       how: 'Scramble 2 eggs with shredded cheese and pile them on buttered toast. Breakfast in 5 minutes.', shop: ['Eggs', 'Shredded cheese', 'Bread'] },
     { name: 'French Bread Pizza', anchors: ['garlic bread', 'rosatella'], groups: ['carbs', 'dairy', 'veg'], likeOf: 'garlic bread',
       how: 'Split garlic bread, add sauce, mozzarella and chopped broccoli. Bake at 425°F for 8–10 min.', shop: ['Garlic bread', 'Pizza sauce', 'Mozzarella', 'Broccoli'] },
-    { name: 'Smash Burger with Pickles & Fries', anchors: ['beef', 'burger', 'pickle'], groups: ['protein', 'carbs', 'veg'], likeOf: 'beef + pickles + fries',
-      how: 'Smash a ball of beef thin in a hot pan and top with lots of pickles and your favorite sauce. Fries on the side.', shop: ['Ground beef', 'Burger buns', 'Cheese slices', 'Pickles', 'Frozen fries'] },
     { name: 'Steak & Broccoli Baked Potato Bar', anchors: ['steak', 'potato', 'broccoli'], groups: ['protein', 'carbs', 'veg', 'dairy'], likeOf: 'steak + potatoes + broccoli',
       how: 'Baked potato topped with sliced steak, steamed broccoli, butter and a sprinkle of parmesan.', shop: ['Russet potatoes', 'Steak', 'Broccoli', 'Shredded cheese'] },
     { name: 'Cauliflower Mac & Cheese', anchors: ['mac'], groups: ['carbs', 'dairy', 'veg'], likeOf: 'mac and cheese',
@@ -1261,7 +1285,6 @@
     { name: 'Salmon & broccoli sheet pan', meal: 'Dinner', need: [['salmon'], ['broccoli']], extra: [['potato'], ['butter', 'garlic']], groups: ['protein', 'veg'], steps: 'Salmon on one side, broccoli on the other. Bake at 400°F for 12–15 min.' },
     { name: 'Salmon tacos', meal: 'Dinner', need: [['salmon'], ['tortilla']], extra: [['corn'], ['lime']], groups: ['protein', 'carbs'], steps: 'Bake salmon, flake into warm tortillas and top with corn and cheese.' },
     { name: 'Steak & potatoes', meal: 'Dinner', need: [['steak'], ['potato', 'fries']], extra: [['corn', 'broccoli', 'green bean'], ['butter']], groups: ['protein', 'carbs'], steps: 'Roast potatoes at 425°F for 25 min; sear steak 3–4 min per side, rest 5 min.' },
-    { name: 'Burger', meal: 'Dinner', need: [['beef', 'burger'], ['bun', 'bread']], extra: [['pickle'], ['ketchup', 'mustard', 'mayo']], groups: ['protein', 'carbs'], steps: 'Shape a patty, cook 4 min per side, and build with your toppings.' },
     { name: 'Cheeseburger potato bowl', meal: 'Dinner', need: [['beef', 'burger'], ['potato', 'fries']], extra: [['pickle']], groups: ['protein', 'carbs'], steps: 'Crispy potatoes or fries in a bowl, topped with browned beef, cheese and pickles.' },
     { name: 'Loaded baked potato', meal: 'Dinner', need: [['potato']], extra: [['butter'], ['broccoli'], ['steak', 'beef']], groups: ['carbs'], steps: 'Microwave a pricked potato 8–10 min, split, and add your toppings.' },
     { name: 'Mashed potatoes', meal: 'Side', need: [['potato'], ['butter'], ['milk']], extra: [['garlic']], groups: ['carbs', 'dairy'], steps: 'Boil peeled potato chunks 15 min, drain, mash with butter and warm milk.' },
@@ -1272,20 +1295,27 @@
     { name: 'Cinnamon sugar toast', meal: 'Breakfast', need: [['bread', 'toast'], ['butter']], extra: [['cinnamon'], ['banana']], groups: ['carbs'], steps: 'Toast the bread. Spread with butter, then sprinkle with cinnamon and a little sugar. Add banana slices on top for extra staying power.' },
     { name: 'Buttery corn scramble', meal: 'Breakfast', need: [['egg'], ['corn']], extra: [['butter'], ['toast', 'bread']], groups: ['protein', 'veg'], steps: 'Warm a handful of corn in butter for 2 minutes. Add 2 whisked eggs and stir slowly until just set. Serve with toast.' },
     { name: '2-ingredient banana pancakes', meal: 'Breakfast', need: [['banana'], ['egg']], extra: [['butter'], ['cinnamon'], ['peanut butter']], groups: ['fruit', 'protein'], steps: 'Mash 1 ripe banana and whisk in 2 eggs. Cook small spoonfuls in a buttered pan on medium-low, about 1 minute per side. Top with peanut butter if you like.' },
-    { name: 'Fried egg toast sandwich', meal: 'Breakfast', need: [['bread', 'toast'], ['egg']], extra: [['butter'], ['hot sauce']], groups: ['carbs', 'protein'], steps: 'Fry an egg (break the yolk if you like it firm). Toast 2 slices and tuck the egg between them. Grab-and-go breakfast.' },
     { name: 'Dill pickle pasta salad', meal: 'Lunch', need: [['pasta', 'noodle'], ['pickle']], extra: [['mayo'], ['ranch'], ['parmesan']], groups: ['carbs', 'veg'], steps: 'Cook pasta and rinse with cold water. Toss with chopped pickles, a spoon of mayo or ranch and a splash of pickle juice. Chill or eat right away.' },
     { name: 'Garlic parmesan fries', meal: 'Lunch', need: [['fries', 'potato']], extra: [['garlic'], ['parmesan'], ['beef', 'burger']], groups: ['carbs'], steps: 'Bake fries until crispy, then toss with melted garlic butter and parmesan. Add browned beef on top to make it a full meal.' },
     { name: 'Garlic parmesan toast bites', meal: 'Snack', need: [['bread', 'toast']], extra: [['garlic'], ['butter'], ['parmesan']], groups: ['carbs'], steps: 'Butter bread, sprinkle with garlic and parmesan, and toast until golden. Cut into small squares.' },
     { name: 'Crispy potato bites', meal: 'Snack', need: [['potato', 'fries']], extra: [['ranch']], groups: ['carbs'], steps: 'Toss small potato cubes with oil and salt. Air-fry at 400°F or bake at 425°F about 15 minutes until crispy. Dip in ranch.' },
     { name: 'Banana & peanut butter', meal: 'Snack', need: [['banana'], ['peanut butter']], extra: [['cinnamon']], groups: ['fruit', 'protein'], steps: 'Slice a banana and dip in or drizzle with peanut butter. Sweet, filling, and ready in a minute.' },
     { name: 'Buttery corn cup', meal: 'Snack', need: [['corn']], extra: [['butter'], ['hot sauce'], ['parmesan']], groups: ['veg'], steps: 'Microwave a cup of corn 1 minute, stir in butter, and add a dash of hot sauce for a Hot Cheetos kick.' },
+    { name: 'Grilled cheese', meal: 'Lunch', need: [['bread', 'toast', 'grilled cheese'], ['cheese', 'grilled cheese']], extra: [['butter'], ['pickle']], groups: ['carbs', 'dairy'], steps: 'Butter the outside of two slices of bread, fill with cheese, and cook in a pan on medium 3 minutes per side until golden and melty. Pickles on the side.' },
+    { name: 'PB&J', meal: 'Lunch', need: [['bread', 'toast'], ['peanut butter']], extra: [['jam', 'jelly'], ['banana']], groups: ['carbs', 'protein'], steps: 'Spread peanut butter on one slice and jam or jelly on the other, then press together. Swap the jam for banana slices if you like.' },
+    { name: 'PB&J toast bites', meal: 'Snack', need: [['bread', 'toast'], ['peanut butter']], extra: [['jam', 'jelly']], groups: ['carbs', 'protein'], steps: 'Toast a slice, spread with peanut butter and a little jam, and cut into 4 squares.' },
     { name: 'Fruit & cracker plate', meal: 'Snack', need: [['apple', 'grape', 'strawberr', 'clementine', 'berr', 'banana'], ['cracker']], extra: [['peanut butter'], ['pickle']], groups: ['fruit', 'carbs'], steps: 'Arrange fruit and crackers on a plate. A real mini-meal instead of grazing.' },
-    { name: 'Garlic bread steak sandwich', meal: 'Lunch', need: [['steak'], ['bread', 'toast', 'garlic bread']], extra: [['garlic'], ['pickle']], groups: ['protein', 'carbs'], steps: 'Toast garlic bread (or butter bread with garlic powder). Sear thin steak slices 1–2 minutes and pile them on.' },
     { name: 'Parmesan broccoli pasta', meal: 'Lunch', need: [['pasta', 'noodle'], ['broccoli']], extra: [['parmesan'], ['garlic'], ['butter']], groups: ['carbs', 'veg'], steps: 'Boil pasta with broccoli for the last 3 minutes. Drain and toss with butter, garlic and parmesan.' },
     { name: 'Salmon pasta salad', meal: 'Lunch', need: [['salmon'], ['pasta', 'noodle']], extra: [['pickle'], ['mayo'], ['lemon']], groups: ['protein', 'carbs'], steps: 'Toss cooked, cooled pasta with flaked salmon, chopped pickles and a spoon of mayo or a squeeze of lemon.' },
     { name: 'Potato & corn hash bowl', meal: 'Lunch', need: [['potato', 'fries'], ['corn']], extra: [['egg'], ['butter'], ['hot sauce']], groups: ['carbs', 'veg'], steps: 'Pan-fry small potato cubes until crispy, stir in corn and butter, and top with a fried egg if you like.' }
   ];
   const PANTRY_STAPLES = ['Eggs', 'Bread', 'Butter', 'Parmesan', 'Milk', 'Garlic', 'Pasta', 'Tortillas'];
+  // no melts / sandwiches / tuna (grilled cheese and PB&J are fine)
+  const NOT_FOR_ME = /\b(melt|melts|sandwich|sandwiches|sub|subs|wrap|wraps|hoagie|panini|tuna|buns?)\b/i;
+  const okFood = (s) => !NOT_FOR_ME.test(String(s).replace(/grilled cheese|pb&j/ig, ''));
+  [RECIPES, PANTRY_DISHES, IDEA_MEALS].forEach(list => { for (let i = list.length - 1; i >= 0; i--) {
+    const x = list[i]; if (!okFood(x.name) || (x.shop && x.shop.some(s => !okFood(s)))) list.splice(i, 1); } });
+  for (let i = IDEA_FOODS.length - 1; i >= 0; i--) if (!okFood(IDEA_FOODS[i][0])) IDEA_FOODS.splice(i, 1);
 
   /* ---- cooking extras (spices, aromatics, sauces, other) ---- */
   const EXTRA_CATS = {
