@@ -1373,3 +1373,13 @@ body.mag[data-theme="bubblegum"] { --p-bg: #FBE4EE; }
 .cat-foods { display: flex; flex-wrap: wrap; gap: 6px; padding: 4px 12px 12px; animation: factin .2s ease; }
 [hidden] { display: none !important; }
 .mag .card.brown .cat-foods .chip.on { background: #F3B3D3; color: #1C1A14; border-color: #F3B3D3; opacity: 1; }
+
+/* plan <-> log sync */
+.slot-name { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; }
+.check { width: 22px; height: 22px; border-radius: 6px; border: 1.5px solid #1C1A14; background: #FFFBF4; cursor: pointer; font: 700 .85rem/1 sans-serif;
+  color: #1C1A14; display: inline-grid; place-items: center; padding: 0; flex: 0 0 auto; }
+.check:hover { background: #F9DCEA; }
+.check.on { background: #C8C46C; }
+.slot.eaten .pitem .howto-link { text-decoration: line-through; text-decoration-thickness: 2px; opacity: .65; }
+.slot.eaten { background: #F2F0DA !important; }
+.mag .slot .done { color: #24301A; background: #C8C46C; border-radius: 999px; padding: 0 8px; font: 500 .62rem "DM Mono", monospace; letter-spacing: .08em; text-transform: uppercase; }

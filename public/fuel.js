@@ -577,8 +577,35 @@
     Object.assign(C, { meal: v('--p-accent'), snack: v('--p-plate-part'), grid: v('--p-line'), band: v('--p-a4'), bar: v('--p-accent'),
       goal: v('--p-dark'), card: v('--p-card'), empty: v('--p-card'), plateLo: v('--p-plate-part'), plateHi: v('--p-plate') });
   }
+  // keep the plan in sync with the log: a plan box is "eaten" when there's a log for that day + meal
+  const SLOT_TIME = { breakfast: [8, 30], lunch: [12, 30], snack: [15, 30], dinner: [18, 30] };
+  function slotLogs(day, slot) { return state.entries.filter(e => e.meal === slot && isoDate(new Date(e.ts)) === day); }
+  function syncPlanWithLog() {
+    if (!state.plan) return;
+    Object.keys(state.plan).forEach(day => { const p = state.plan[day]; p.logged = {};
+      SLOTS.forEach(([k]) => { if (slotLogs(day, k).length) p.logged[k] = true; }); });
+  }
+  function checkOffSlot(day, slot) {
+    const p = dayPlan(day); if (!p[slot].length) return null;
+    const [hh, mm] = SLOT_TIME[slot], d = new Date(day + 'T12:00'); d.setHours(hh, mm, 0, 0);
+    const now = new Date();
+    if (isoDate(d) > isoDate(now)) { alert('You can check this off on ' + fmtDay(d) + ' 💛'); return null; }
+    const ts = d > now ? now : d;
+    const entry = { id: uid(), ts: ts.toISOString(), type: slot === 'snack' ? 'snack' : 'meal', meal: slot, fromPlan: true,
+      foods: p[slot].map(it => ({ name: it.name, groups: it.groups.slice(), cal: it.cal || 0 })), note: 'From my plan' };
+    entry.cal = state.settings.calories ? (entry.foods.reduce((n, f) => n + f.cal, 0) || null) : null;
+    state.entries.push(entry); save(); render(); showCheer(entry); return entry;
+  }
+  function uncheckSlot(day, slot) {
+    const logs = slotLogs(day, slot); if (!logs.length) return;
+    const fromPlan = logs.every(e => e.fromPlan);
+    if (!fromPlan && !confirm('This will remove your logged ' + MEAL_NAMES[slot].toLowerCase() + ' for ' + fmtDay(day + 'T12:00') + '. Remove it?')) return;
+    const ids = new Set(logs.map(e => e.id));
+    state.entries = state.entries.filter(e => !ids.has(e.id)); save(); render(); toast('↺ Un-checked and removed from your log');
+  }
   function render() {
     applyTheme();
+    syncPlanWithLog();
     document.body.classList.toggle('no-cal', !state.settings.calories);
     $('#cal-toggle').checked = state.settings.calories;
     renderToday(); renderWeek(); renderRecipe(); renderLearn(); renderFoods(); renderPlan(); renderPlannedToday(); renderIdeas(); renderPantry(); renderExtras(); renderFavs(); renderInstall(); renderPlateBuilder(); renderStickerBook();
@@ -973,7 +1000,6 @@
     if (!fresh.length) return false;
     state.rerollN = (state.rerollN || 0) + 1;
     p[slot] = [fresh[state.rerollN % fresh.length].item];
-    p.logged = p.logged || {}; delete p.logged[slot];
     save(); return true;
   }
   function autofill(days) {
@@ -1054,7 +1080,10 @@
       const key = isoDate(d), p = peekPlan(key), have = dayGroups(p);
       const slots = SLOTS.map(([k, label, icon]) => {
         const items = p ? p[k] : [];
-        return '<div class="slot"><div class="slot-name">' + ico(icon) + ' ' + label + (p && p.logged && p.logged[k] ? ' <span class="done">✓ eaten</span>' : '') + '</div>'
+        const eaten = !!(p && p.logged && p.logged[k]);
+        return '<div class="slot' + (eaten ? ' eaten' : '') + '"><div class="slot-name">'
+          + (items.length || eaten ? '<button type="button" class="check' + (eaten ? ' on' : '') + '" data-plan-check="' + key + '|' + k + '" aria-pressed="' + eaten + '" title="' + (eaten ? 'Eaten (tap to undo)' : 'I ate this: check it off and log it') + '">' + (eaten ? '✓' : '') + '</button>' : '')
+          + ico(icon) + ' ' + label + (eaten ? ' <span class="done">eaten</span>' : '') + '</div>'
           + '<div class="slot-items">' + items.map((it, i) => itemTag(it, key, k, i)).join('') + '</div>'
           + '<div class="slot-btns"><button class="add" data-plan-add="' + key + '|' + k + '">+ Add</button>'
           + '<button class="add reroll" data-plan-reroll="' + key + '|' + k + '" title="Swap this box for a new idea">↻ New idea</button></div></div>';
@@ -1091,8 +1120,8 @@
     box.hidden = !has; if (!has) return;
     box.innerHTML = '<h2>📅 Planned for today</h2><p class="muted">Tap a food to see how to make it.</p><ul class="entries">' + SLOTS.filter(([k]) => p[k].length).map(([k, label, icon]) =>
       '<li><span class="time">' + ico(icon) + ' ' + label + '</span><span class="what">' + p[k].map(it => '<button class="howto-link inline" data-howto="' + esc(it.kind + '|' + it.name + '|' + key + '|' + k) + '">' + esc(it.name) + '</button>').join(', ') + '</span>'
-      + (p.logged && p.logged[k] ? '<span class="done">✓ eaten</span>' : '<button class="btn small" data-log-plan="' + k + '">I ate this</button>') + '</li>').join('') + '</ul>'
-      + '<p class="muted">Ate something different? No problem at all, just log what you had below.</p>';
+      + (p.logged && p.logged[k] ? '<button class="btn small ghost inline" data-plan-check="' + key + '|' + k + '" title="Undo">✓ Eaten · undo</button>' : '<button class="btn small" data-plan-check="' + key + '|' + k + '">I ate this</button>') + '</li>').join('') + '</ul>'
+      + '<p class="muted">Ate something different? Just log what you had below for that meal and it\'ll be checked off here too.</p>';
   }
 
   function showCheer(entry) {
@@ -1148,15 +1177,11 @@
       return; }
     const un = ev.target.closest('[data-unplan]');
     if (un) { const [day, slot, i] = un.dataset.unplan.split('|'); dayPlan(day)[slot].splice(+i, 1); save(); render(); return; }
-    const lp = ev.target.closest('[data-log-plan]');
-    if (lp) {
-      const slot = lp.dataset.logPlan, p = dayPlan(isoDate(new Date()));
-      const entry = { id: uid(), ts: new Date().toISOString(), type: slot === 'snack' ? 'snack' : 'meal', meal: MEAL_NAMES[slot] ? slot : autoMainMeal(),
-        foods: p[slot].map(it => ({ name: it.name, groups: it.groups.slice(), cal: it.cal || 0 })), note: 'From my plan' };
-      entry.cal = state.settings.calories ? (entry.foods.reduce((n, f) => n + f.cal, 0) || null) : null;
-      p.logged = p.logged || {}; p.logged[slot] = true;
-      state.entries.push(entry); save(); render(); showCheer(entry);
-    }
+    const pc = ev.target.closest('[data-plan-check]');
+    if (pc) { const [day, slot] = pc.dataset.planCheck.split('|');
+      const p = peekPlan(day);
+      if (p && p.logged && p.logged[slot]) uncheckSlot(day, slot); else checkOffSlot(day, slot);
+      return; }
   });
   $('#groc-form').addEventListener('submit', (ev) => {
     ev.preventDefault();
@@ -1648,7 +1673,8 @@
       const [kind, name, day, slot] = lg.dataset.howtoLog.split('|'), h = howtoData(kind, name);
       const entry = { id: uid(), ts: new Date().toISOString(), type: slot === 'snack' ? 'snack' : 'meal', meal: MEAL_NAMES[slot] ? slot : autoMainMeal(),
         foods: [{ name: h.name, groups: h.groups.filter(g => GROUPS[g]), cal: h.cal || 0 }], cal: state.settings.calories ? (h.cal || null) : null, note: 'Made it myself' };
-      if (day && slot && state.plan && state.plan[day]) { state.plan[day].logged = state.plan[day].logged || {}; state.plan[day].logged[slot] = true; }
+      if (day && slot && MEAL_NAMES[slot]) { entry.meal = slot; entry.fromPlan = true;
+        if (day < isoDate(new Date())) { const [hh, mm] = SLOT_TIME[slot], d = new Date(day + 'T12:00'); d.setHours(hh, mm, 0, 0); entry.ts = d.toISOString(); } }
       state.entries.push(entry); save();
       lastTab = 'today'; history.replaceState(null, '', location.pathname + location.search); leaveHowto();
       render(); showCheer(entry);
