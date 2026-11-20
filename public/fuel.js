@@ -1781,7 +1781,6 @@
     box.innerHTML = '<h2>🍽 Plate of the week</h2><p class="muted">Once a week, build one meal on the plate. Tap a food, or drag it onto the plate. Each section fills as you go.</p>'
       + '<div class="pb-grid"><div class="pb-plate" id="pb-drop">' + plateSVGBig()
       + '<p class="pb-note" aria-live="polite">' + esc(plateNote()) + '</p>'
-      + (lastFact ? '<div class="pb-fact" aria-live="polite"><p class="pb-fact-lbl">Good to know: ' + esc(lastFact.name) + '</p>' + factHTML(lastFact.fact) + '</div>' : '')
       + (plateItems.length ? '<div class="pb-items">' + plateItems.map((f, i) => '<button type="button" class="pitem" data-pb-remove="' + i + '">' + esc(f.name) + ' ×</button>').join('') + '</div>'
         + '<div class="pb-actions"><button type="button" class="btn" id="pb-log">Log this plate 💛</button><button type="button" class="btn ghost inline" id="pb-clear">Start over</button></div>' : '')
       + '</div><div class="pb-tray">' + tray + '</div></div>';
@@ -1793,6 +1792,22 @@
     plateItems.push({ name: f.name, groups: f.groups.slice(), cal: f.cal || 0 });
     lastFact = { name: f.name, fact: foodFact(f) };
     lastAdded = f.groups.slice(); renderPlateBuilder();
+    showFactPop(lastFact);
+  }
+  // pop-up card with a fact about the food you just put on the plate
+  let factPopTimer = null;
+  function showFactPop(lf) {
+    document.querySelectorAll('.fact-pop').forEach(x => x.remove());
+    clearTimeout(factPopTimer);
+    const f = lf.fact, item = state.foods.find(x => x.name === lf.name), g = item ? item.groups[0] : 'carbs';
+    const pop = document.createElement('div'); pop.className = 'fact-pop'; pop.setAttribute('role', 'status');
+    pop.innerHTML = '<button type="button" class="fp-close" aria-label="Close">×</button>'
+      + '<div class="fp-head"><span class="fp-ico">' + ico(GROUP_ICON[g] || 'sparkle') + '</span><div><p class="fp-lbl">Good to know</p><h3>' + esc(lf.name) + '</h3></div></div>'
+      + '<p class="fp-text">' + esc(f.text) + '</p><p class="fp-src">Source: ' + esc(f.src) + '</p>';
+    document.body.appendChild(pop); sketchify(pop);
+    const close = () => { pop.classList.add('out'); setTimeout(() => pop.remove(), 250); };
+    pop.querySelector('.fp-close').addEventListener('click', close);
+    factPopTimer = setTimeout(close, 7000);
   }
   document.addEventListener('click', (ev) => {
     const f = ev.target.closest('[data-pb-food]'); if (f) { plateAdd(f.dataset.pbFood); return; }
