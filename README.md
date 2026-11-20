@@ -5,7 +5,7 @@ A judgment-free food tracker. Log meals and snacks, get encouragement backed by 
 Plain HTML, CSS and JavaScript with no build step. Data is saved only in your browser (localStorage).
 
 - `public/index.html`: the page
-- `public/fuel.css`: styles (palette: Cream #F5EFC6, Sceptre Red #4D0E12, Cerulean #A5BCD6, Potting Soil #4A2E27, Java #231815)
+- `public/fuel.css`: styles (palette, exact colors only: Sea Pink #E098AC, Beet Red #68002C, Crystal Blue #A6C9DD, Lemon Icing #FFF8D5)
 - `public/fuel.js`: logging, encouragement, charts, recipes
 
 Hosted on Cloudflare Workers; `wrangler.jsonc` tells it to serve the `public/` folder.

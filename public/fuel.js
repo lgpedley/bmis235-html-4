@@ -455,7 +455,7 @@
      Charts (inline SVG)
      --------------------------------------------------------------- */
   const SVGNS = 'http://www.w3.org/2000/svg';
-  const C = { meal: '#4D0E12', snack: '#A5BCD6', grid: '#DDD2A0', band: '#EFE7C4', bar: '#4A2E27', goal: '#4D0E12', card: '#FCF9E8', empty: '#FBF7E6', plateLo: '#EFE7BF', plateHi: '#8FA6C2' };
+  const C = { meal: '#68002C', snack: '#A6C9DD', grid: '#E098AC', band: '#A6C9DD', bar: '#68002C', goal: '#E098AC', card: '#FFF8D5', empty: '#FFF8D5', plateLo: '#FFF8D5', plateHi: '#A6C9DD' };
 
   // Timeline: rows of days, x = hour of day
   function scheduleSVG(days, rowLabels) {
@@ -496,9 +496,9 @@
     let s = '<svg class="chart" viewBox="0 0 ' + W + ' ' + H + '" role="img" aria-label="Food groups this week">';
     keys.forEach((k, i) => {
       const g = GROUPS[k], y = top + rowH * i + (rowH - barH) / 2, v = counts[k];
-      s += '<use href="#i-' + GROUP_ICON[k] + '" x="0" y="' + (y - 3) + '" width="24" height="24" style="color:#4D0E12"/>';
+      s += '<use href="#i-' + GROUP_ICON[k] + '" x="0" y="' + (y - 3) + '" width="24" height="24" style="color:#68002C"/>';
       s += '<text class="lab" x="30" y="' + (y + barH - 4) + '">' + esc(g.label) + '</text>';
-      s += '<rect x="' + left + '" y="' + y + '" width="' + (W - left - right) + '" height="' + barH + '" fill="' + C.band + '" rx="4"/>';
+      s += '<rect x="' + left + '" y="' + y + '" width="' + (W - left - right) + '" height="' + barH + '" fill="' + C.card + '" rx="4"/>';
       if (v > 0) s += '<rect x="' + left + '" y="' + y + '" width="' + Math.max(4, x(v) - left) + '" height="' + barH + '" fill="' + C.bar + '" rx="4"/>';
       if (g.goal) s += '<line x1="' + x(g.goal) + '" x2="' + x(g.goal) + '" y1="' + (y - 4) + '" y2="' + (y + barH + 4) + '" stroke="' + C.goal + '" stroke-width="2"/>';
       const lbl = g.goal ? v + ' / ' + g.goal : String(v);
@@ -522,13 +522,13 @@
     // MyPlate layout: veggies + fruit on one half, grains + protein on the other
     const parts = [['veg', 0, 108], ['fruit', 108, 180], ['carbs', 180, 288], ['protein', 288, 360]];
     let s = '<svg class="chart plate" viewBox="0 0 262 232" role="img" aria-label="Plate showing food groups">';
-    s += '<circle cx="' + cx + '" cy="' + cy + '" r="' + (R + 14) + '" fill="#FFFFFF" stroke="' + C.grid + '" stroke-width="2"/>';
-    const fill = (v) => v > 0 ? mix(C.plateLo, C.plateHi, Math.min(1, v)) : C.empty;
+    s += '<circle cx="' + cx + '" cy="' + cy + '" r="' + (R + 14) + '" fill="#FFF8D5" stroke="' + C.grid + '" stroke-width="2"/>';
+    const fill = (v) => v >= 1 ? '#A6C9DD' : v > 0 ? '#E098AC' : C.empty;   // exact palette colors only
     const node = (g, x, y, shape) => {
       const v = levels[g] || 0, G = GROUPS[g], on = v > 0;
       const tip = G.label + (labels && labels[g] ? ': ' + labels[g] : on ? ': yes!' : ': not yet');
       return '<g class="hit" data-tip="' + esc(tip) + '">' + shape(fill(v), on)
-        + '<use href="#i-' + GROUP_ICON[g] + '" x="' + (x - 14) + '" y="' + (y - 22) + '" width="28" height="28" opacity="' + (on ? 1 : .45) + '" style="color:#4D0E12"/>'
+        + '<use href="#i-' + GROUP_ICON[g] + '" x="' + (x - 14) + '" y="' + (y - 22) + '" width="28" height="28" opacity="1" style="color:#68002C"/>'
         + '<text class="plab" x="' + x + '" y="' + (y + 22) + '" text-anchor="middle">' + esc(labels && labels[g] ? labels[g] : G.label.split(' ')[0]) + '</text></g>';
     };
     parts.forEach(([g, a0, a1]) => {
