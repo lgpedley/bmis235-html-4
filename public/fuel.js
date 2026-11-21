@@ -856,11 +856,34 @@
     if (per100) return { cal: Math.round(per100), basis: 'per 100 g (no serving size on the label)' };
     return null;
   }
+  // search order: saved results on this device -> your site's /api/food -> Open Food Facts directly
+  const LOOKUP_CACHE = 'gentleplate.lookup';
+  function cachedLookup(q) { try { const c = JSON.parse(localStorage.getItem(LOOKUP_CACHE) || '{}')[q.toLowerCase()]; return c && Date.now() - c.at < 30 * 864e5 ? c.products : null; } catch (e) { return null; } }
+  function rememberLookup(q, products) {
+    try { const all = JSON.parse(localStorage.getItem(LOOKUP_CACHE) || '{}'); all[q.toLowerCase()] = { at: Date.now(), products };
+      const keys = Object.keys(all); if (keys.length > 60) keys.sort((a, b) => all[a].at - all[b].at).slice(0, keys.length - 60).forEach(k => delete all[k]);
+      localStorage.setItem(LOOKUP_CACHE, JSON.stringify(all)); } catch (e) {}
+  }
+  async function fetchJSON(url, ms) {
+    const ac = new AbortController(), t = setTimeout(() => ac.abort(), ms);
+    try { const r = await fetch(url, { signal: ac.signal }); if (!r.ok) throw new Error(String(r.status)); return await r.json(); } finally { clearTimeout(t); }
+  }
   async function searchProducts(q) {
-    const url = OFF_URL + '?search_terms=' + encodeURIComponent(q) + '&search_simple=1&action=process&json=1&page_size=8&fields=' + OFF_FIELDS;
-    const res = await fetch(url); if (!res.ok) throw new Error('lookup ' + res.status);
-    const data = await res.json();
-    return (data.products || []).filter(p => p.product_name).slice(0, 5);
+    const saved = cachedLookup(q); if (saved) return saved;
+    const tries = [];
+    if (location.protocol.startsWith('http')) tries.push(() => fetchJSON('/api/food?q=' + encodeURIComponent(q), 12000), () => fetchJSON('/api/food?q=' + encodeURIComponent(q), 12000));
+    tries.push(() => fetchJSON(OFF_URL + '?search_terms=' + encodeURIComponent(q) + '&search_simple=1&action=process&json=1&page_size=8&fields=' + OFF_FIELDS, 10000));
+    let lastErr;
+    for (let i = 0; i < tries.length; i++) {
+      try {
+        const data = await tries[i]();
+        const products = (data.products || data.hits || []).filter(p => p.product_name).slice(0, 5)
+          .map(p => Object.assign({}, p, { brands: Array.isArray(p.brands) ? p.brands.join(', ') : (p.brands || '') }));
+        if (products.length) rememberLookup(q, products);
+        return products;
+      } catch (e) { lastErr = e; if (i < tries.length - 1) await new Promise(r => setTimeout(r, 700)); }
+    }
+    throw lastErr || new Error('lookup failed');
   }
   // wire a "Look it up" button: name input + results box + group select + calorie input
   function wireLookup(o) {
@@ -871,7 +894,7 @@
       const q = $(o.name).value.trim(); if (q.length < 3) { box.innerHTML = '<p class="muted">Type at least a few letters, like "trader joes chicken dumplings".</p>'; return; }
       box.innerHTML = '<p class="muted">🔍 Looking up "' + esc(q) + '"…</p>'; sketchify(box);
       try { found = await searchProducts(q); }
-      catch (e) { box.innerHTML = '<p class="muted">Couldn\'t reach the food database right now. You can still add it. I\'ll estimate the calories and group.</p>'; return; }
+      catch (e) { box.innerHTML = '<p class="muted">The food database is busy right now. <button type="button" class="linkish" data-lk-retry>Try again</button> in a moment, or just add it and I\'ll estimate the calories and group.</p>'; return; }
       if (!found.length) { box.innerHTML = '<p class="muted">No packaged product found for "' + esc(q) + '". You can still add it. Pick the group and I\'ll estimate.</p>'; return; }
       box.innerHTML = '<p class="lbl">Which one is it?</p><div class="lookup-results">' + found.map((p, i) => {
         const c = caloriesFromProduct(p), gs = groupsFromProduct(p);
@@ -911,6 +934,7 @@
         if (gs.includes(k)) { if (gs.length > 1) gs.splice(gs.indexOf(k), 1); } else gs.push(k);
         $(o.group).value = gs[0]; showPick(); return; }
       if (ev.target.closest('[data-lk-clear]')) { o.state.pick = null; run(); }
+      if (ev.target.closest('[data-lk-retry]')) run();
     });
     return { reset() { o.state.pick = null; box.innerHTML = ''; } };
   }
