@@ -815,10 +815,115 @@
     renderPicker();
   });
 
+
+  /* ===============================================================
+     PRODUCT LOOKUP (Open Food Facts): real ingredients + calories
+     for packaged foods, used to set calories and food groups.
+     Only the food name you type is sent to openfoodfacts.org.
+     =============================================================== */
+  const OFF_URL = 'https://world.openfoodfacts.org/cgi/search.pl';
+  const OFF_FIELDS = 'code,product_name,brands,categories_tags,ingredients_text,nutriments,serving_size,serving_quantity,image_thumb_url';
+  const GROUP_RULES = {
+    protein: /\b(chicken|beef|pork|turkey|salmon|tuna|fish|cod|shrimp|eggs?|tofu|beans?|lentils?|chickpeas?|meat|sausage|ham|bacon|steak|peanut butter|peanuts?|almonds?|whey protein)\b/,
+    dairy:   /\b(cheese|cheddar|mozzarella|parmesan|milk|cream|yogurt|yoghurt|dairy|butter)\b/,
+    carbs:   /\b(wheat|flour|pasta|macaroni|noodles?|rice|bread|potato(es)?|oats?|cereal|tortillas?|dumplings?|crackers?|corn flour|cornmeal|semolina|dough|bun|bagel)\b/,
+    veg:     /\b(cabbage|carrots?|onions?|broccoli|spinach|vegetables?|peppers?|kale|peas|sweet corn|tomato(es)?|celery|scallions?|green onions?|mushrooms?|zucchini|cauliflower|green beans|leeks?|bok choy|chives)\b/,
+    fruit:   /\b(apples?|bananas?|berry|berries|strawberr(y|ies)|grapes?|oranges?|mango|peach(es)?|pineapple|fruit|raisins?|cherr(y|ies))\b/
+  };
+  const FUN_CATS = /(snacks|sweet-snacks|salty-snacks|chips|crisps|candies|confectioneries|chocolates?|desserts|ice-creams?|sodas|sweetened-beverages|biscuits-and-cakes|cookies)/;
+  // which food groups a product belongs to, from its first ingredients + categories
+  function groupsFromProduct(p) {
+    const ingr = String(p.ingredients_text || '').toLowerCase().replace(/\([^)]*\)/g, ' ');
+    const top = ingr.split(/[,;]/).slice(0, 7).join(' , ');          // the main ingredients come first on a label
+    const cats = (p.categories_tags || []).join(' ').replace(/en:/g, '').replace(/-/g, ' ');
+    const name = String(p.product_name || '').toLowerCase();
+    const text = top + ' ' + cats + ' ' + name;
+    const out = Object.keys(GROUP_RULES).filter(g => GROUP_RULES[g].test(text));
+    // a little butter or milk powder isn't really a dairy serving: only count dairy if it's in the name, categories or the first 4 ingredients
+    if (out.includes('dairy') && !GROUP_RULES.dairy.test(ingr.split(/[,;]/).slice(0, 4).join(' ') + ' ' + cats + ' ' + name)) out.splice(out.indexOf('dairy'), 1);
+    // main group first: whichever shows up earliest in the ingredient list
+    const pos = (g) => { const m = top.match(GROUP_RULES[g]); return m ? m.index : 9999; };
+    out.sort((a, b) => pos(a) - pos(b));
+    if (FUN_CATS.test((p.categories_tags || []).join(' '))) out.push('fun');
+    if (!out.length) out.push(estimateCal(p.product_name || '').group);
+    return [...new Set(out)];
+  }
+  function caloriesFromProduct(p) {
+    const n = p.nutriments || {};
+    const perServing = n['energy-kcal_serving'], per100 = n['energy-kcal_100g'], q = +p.serving_quantity;
+    if (perServing) return { cal: Math.round(perServing), basis: 'per serving' + (p.serving_size ? ' (' + p.serving_size + ')' : '') };
+    if (per100 && q) return { cal: Math.round(per100 * q / 100), basis: 'per serving (' + (p.serving_size || q + ' g') + ')' };
+    if (per100) return { cal: Math.round(per100), basis: 'per 100 g (no serving size on the label)' };
+    return null;
+  }
+  async function searchProducts(q) {
+    const url = OFF_URL + '?search_terms=' + encodeURIComponent(q) + '&search_simple=1&action=process&json=1&page_size=8&fields=' + OFF_FIELDS;
+    const res = await fetch(url); if (!res.ok) throw new Error('lookup ' + res.status);
+    const data = await res.json();
+    return (data.products || []).filter(p => p.product_name).slice(0, 5);
+  }
+  // wire a "Look it up" button: name input + results box + group select + calorie input
+  function wireLookup(o) {
+    const box = $(o.box);
+    let found = [];
+    o.state.pick = null;
+    async function run() {
+      const q = $(o.name).value.trim(); if (q.length < 3) { box.innerHTML = '<p class="muted">Type at least a few letters, like "trader joes chicken dumplings".</p>'; return; }
+      box.innerHTML = '<p class="muted">🔍 Looking up "' + esc(q) + '"…</p>'; sketchify(box);
+      try { found = await searchProducts(q); }
+      catch (e) { box.innerHTML = '<p class="muted">Couldn\'t reach the food database right now. You can still add it. I\'ll estimate the calories and group.</p>'; return; }
+      if (!found.length) { box.innerHTML = '<p class="muted">No packaged product found for "' + esc(q) + '". You can still add it. Pick the group and I\'ll estimate.</p>'; return; }
+      box.innerHTML = '<p class="lbl">Which one is it?</p><div class="lookup-results">' + found.map((p, i) => {
+        const c = caloriesFromProduct(p), gs = groupsFromProduct(p);
+        return '<button type="button" class="lookup-item" data-pick="' + i + '">'
+          + (p.image_thumb_url ? '<img src="' + esc(p.image_thumb_url) + '" alt="" loading="lazy">' : '<span class="lk-noimg">🍽</span>')
+          + '<span class="lk-text"><b>' + esc(p.product_name) + '</b>' + (p.brands ? '<span class="muted"> · ' + esc(String(p.brands).split(',')[0]) + '</span>' : '')
+          + '<span class="lk-meta">' + (c ? '≈ ' + c.cal + ' cal ' + esc(c.basis) : 'no calorie info') + ' · ' + gs.map(g => GROUPS[g].label).join(', ') + '</span></span></button>';
+      }).join('') + '</div><p class="muted lk-src">From Open Food Facts, a free public food database.</p>';
+      sketchify(box);
+    }
+    function showPick() {
+      const pk = o.state.pick; if (!pk) return;
+      box.innerHTML = '<div class="lookup-picked"><p><b>✓ ' + esc(pk.name) + '</b>' + (pk.basis ? ' <span class="muted">≈ ' + pk.cal + ' cal ' + esc(pk.basis) + '</span>' : '') + '</p>'
+        + (pk.ingredients ? '<p class="muted lk-ingr"><b>Ingredients:</b> ' + esc(pk.ingredients.slice(0, 220)) + (pk.ingredients.length > 220 ? '…' : '') + '</p>' : '')
+        + '<p class="lbl">Food groups <span class="muted">(from the ingredients; tap to change)</span></p><div class="chips">'
+        + GROUP_KEYS.map(g => '<button type="button" class="chip' + (pk.groups.includes(g) ? ' on' : '') + '" data-lk-group="' + g + '">' + esc(GROUPS[g].label) + '</button>').join('')
+        + '</div><button type="button" class="linkish" data-lk-clear>Not right? Search again</button></div>';
+      sketchify(box);
+    }
+    $(o.btn).addEventListener('click', run);
+    $(o.name).addEventListener('keydown', (ev) => { if (ev.key === 'Enter') { ev.preventDefault(); run(); } });
+    $(o.name).addEventListener('input', () => { if (o.state.pick && $(o.name).value.trim() !== o.state.pick.name) { o.state.pick = null; box.innerHTML = ''; } });
+    box.addEventListener('click', (ev) => {
+      const it = ev.target.closest('[data-pick]');
+      if (it) {
+        const p = found[+it.dataset.pick], c = caloriesFromProduct(p);
+        const brand = p.brands ? String(p.brands).split(',')[0].trim() : '';
+        const name = (brand && !String(p.product_name).toLowerCase().includes(brand.toLowerCase()) ? brand + ' ' : '') + p.product_name;
+        o.state.pick = { name: name.slice(0, 60), groups: groupsFromProduct(p), cal: c ? c.cal : null, basis: c ? c.basis : '', ingredients: p.ingredients_text || '' };
+        $(o.name).value = o.state.pick.name;
+        if (c) $(o.cal).value = c.cal;
+        $(o.group).value = o.state.pick.groups[0];
+        showPick(); return;
+      }
+      const g = ev.target.closest('[data-lk-group]');
+      if (g && o.state.pick) { const gs = o.state.pick.groups, k = g.dataset.lkGroup;
+        if (gs.includes(k)) { if (gs.length > 1) gs.splice(gs.indexOf(k), 1); } else gs.push(k);
+        $(o.group).value = gs[0]; showPick(); return; }
+      if (ev.target.closest('[data-lk-clear]')) { o.state.pick = null; run(); }
+    });
+    return { reset() { o.state.pick = null; box.innerHTML = ''; } };
+  }
+  const otherLk = { }, foodLk = { };
+  const otherLookup = wireLookup({ name: '#other-name', btn: '#other-lookup', box: '#other-lookup-box', group: '#other-group', cal: '#other-cal', state: otherLk });
+  const foodLookup = wireLookup({ name: '#food-name', btn: '#food-lookup', box: '#food-lookup-box', group: '#food-group', cal: '#food-cal', state: foodLk });
+  const pickedGroups = (lk, nameSel, groupSel) => (lk.pick && $(nameSel).value.trim() === lk.pick.name) ? lk.pick.groups.slice() : [$(groupSel).value];
+
   $('#other-add').addEventListener('click', () => {
     const name = $('#other-name').value.trim(); if (!name) return;
-    extras.push({ name, groups: [$('#other-group').value], cal: +$('#other-cal').value || estimateCal(name, $('#other-group').value).cal });
-    $('#other-name').value = ''; $('#other-cal').value = ''; otherEst.reset();
+    const groups = pickedGroups(otherLk, '#other-name', '#other-group');
+    extras.push({ name, groups, cal: +$('#other-cal').value || estimateCal(name, groups[0]).cal });
+    $('#other-name').value = ''; $('#other-cal').value = ''; otherEst.reset(); otherLookup.reset();
     renderPicker();
   });
   $('#log-cal').addEventListener('input', () => { calTouched = true; });
@@ -912,9 +1017,10 @@
   $('#food-form').addEventListener('submit', (ev) => {
     ev.preventDefault();
     const name = $('#food-name').value.trim(); if (!name) return;
-    const typed = +$('#food-cal').value, e = estimateCal(name, $('#food-group').value);
-    state.foods.push({ id: uid(), name, groups: [$('#food-group').value], cal: typed || e.cal, calEst: !typed });
-    $('#food-name').value = ''; $('#food-cal').value = ''; foodEst.reset();
+    const groups = pickedGroups(foodLk, '#food-name', '#food-group');
+    const typed = +$('#food-cal').value, e = estimateCal(name, groups[0]);
+    state.foods.push({ id: uid(), name, groups, cal: typed || e.cal, calEst: !typed });
+    $('#food-name').value = ''; $('#food-cal').value = ''; foodEst.reset(); foodLookup.reset();
     save(); render();
   });
 

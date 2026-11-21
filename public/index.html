@@ -117,7 +117,11 @@
           <details class="other">
             <summary>+ Something not on my list</summary>
             <div class="row">
-              <input type="text" id="other-name" placeholder="e.g. apple slices">
+              <input type="text" id="other-name" placeholder="e.g. Trader Joe's chicken dumplings">
+              <button type="button" class="btn small soft" id="other-lookup">🔍 Look it up</button>
+            </div>
+            <div class="lookup" id="other-lookup-box"></div>
+            <div class="row">
               <select id="other-group" aria-label="Food group"></select>
               <input type="number" id="other-cal" class="cal-only" placeholder="cal" min="0" aria-label="Calories">
               <button type="button" class="btn small" id="other-add">Add</button>
@@ -273,7 +277,11 @@
           <h2>Add a food</h2>
           <form id="food-form">
             <label class="lbl" for="food-name">Name</label>
-            <input type="text" id="food-name" required maxlength="40" placeholder="e.g. strawberries">
+            <div class="row">
+              <input type="text" id="food-name" required maxlength="60" placeholder="e.g. strawberries, or a product like Kraft mac & cheese cup">
+              <button type="button" class="btn small soft" id="food-lookup">🔍 Look it up</button>
+            </div>
+            <div class="lookup" id="food-lookup-box"></div>
             <label class="lbl" for="food-group">Food group</label>
             <select id="food-group"></select>
             <div class="cal-only">
