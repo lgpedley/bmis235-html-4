@@ -6,7 +6,9 @@
   "assets": {
     "directory": "./public",
     "binding": "ASSETS"
-  }
-  // Sync storage: add the Workers KV namespace here once it exists, e.g.
-  // "kv_namespaces": [{ "binding": "SYNC", "id": "<namespace id>" }]
+  },
+  // Workers KV namespace "gentle-plate-sync": stores each sync code's data
+  "kv_namespaces": [
+    { "binding": "SYNC", "id": "e927f0295f3b47c0a59167769ef4f187" }
+  ]
 }
