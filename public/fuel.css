@@ -1392,3 +1392,6 @@ body.mag[data-theme="bubblegum"] { --p-bg: #FBE4EE; }
 .sync-join { margin-top: 10px; }
 .sync-join summary { cursor: pointer; font-weight: 600; }
 .sync-join input { flex: 1 1 200px; }
+.settings-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 26px; }
+.settings-grid h3 { margin-top: 4px; }
+.settings-card { margin-top: 18px; }
