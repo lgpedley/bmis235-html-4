@@ -307,7 +307,9 @@
   }
   function save() {
     try { localStorage.setItem(KEY, JSON.stringify(state)); } catch (e) { /* storage blocked: app still works this visit */ }
+    if (window.GPSync && !applyingRemote) window.GPSync.changed();
   }
+  let applyingRemote = false;
 
   /* ---------------------------------------------------------------
      Helpers
@@ -2039,6 +2041,15 @@
     if (!(ev.target.closest && ev.target.closest('#pb-drop'))) return;
     ev.preventDefault(); const id = ev.dataTransfer.getData('text/plain'); if (id) plateAdd(id);
   });
+
+  // hooks for sync.js
+  window.GP = {
+    get: () => JSON.parse(JSON.stringify(state)),
+    saveQuiet: (s) => { applyingRemote = true; state = s; try { localStorage.setItem(KEY, JSON.stringify(state)); } catch (e) {} applyingRemote = false; },
+    replace: (s) => { applyingRemote = true; state = s; try { localStorage.setItem(KEY, JSON.stringify(state)); } catch (e) {}
+      plateItems = (state.plateDraft || []).slice(); render(); applyingRemote = false; },
+    esc, toast: (m) => toast(m)
+  };
 
   render();
   routeHash();
